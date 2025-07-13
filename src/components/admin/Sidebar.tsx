@@ -30,7 +30,7 @@ export default function Sidebar() {
   const path = usePathname() || "";
 
   return (
-    <div className="min-h-screen bg-neutral-950 text-white flex">
+    <div className="min-h-screen bg-neutral-950 text-white flex font-bold">
       <aside className="hidden md:flex flex-col justify-between w-64 bg-neutral-900/70 backdrop-blur border-r border-neutral-800 p-4 z-40">
         <div>
           <div className="flex flex-col items-center mb-6">
