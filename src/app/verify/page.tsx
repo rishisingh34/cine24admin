@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { signIn } from "next-auth/react";
+import { toast } from "sonner"; 
 import BackgroundGridPattern from "@/components/ui/BackgroundGridPattern";
 
 export default function AdminOTPVerifyPage() {
@@ -13,20 +14,29 @@ export default function AdminOTPVerifyPage() {
   const [otp, setOtp] = useState<string[]>(["", "", "", "", "", ""]);
   const inputRefs = useRef<Array<HTMLInputElement | null>>([]);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
 
   useEffect(() => {
     inputRefs.current[0]?.focus();
   }, []);
 
   const handleChange = (index: number, value: string) => {
-    if (!/^\d*$/.test(value)) return; // Allow only digits
+    if (!/^\d*$/.test(value)) return;
     const updated = [...otp];
     updated[index] = value.slice(-1);
     setOtp(updated);
 
     if (value && index < 5) {
       inputRefs.current[index + 1]?.focus();
+    }
+
+    if (updated.every((digit) => digit.length === 1)) {
+      handleSubmitAuto(updated.join(""));
+    }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent, index: number) => {
+    if (e.key === "Backspace" && !otp[index] && index > 0) {
+      inputRefs.current[index - 1]?.focus();
     }
   };
 
@@ -40,21 +50,14 @@ export default function AdminOTPVerifyPage() {
       if (inputRefs.current[i]) inputRefs.current[i]!.value = d;
     });
 
-    inputRefs.current[5]?.focus();
+    handleSubmitAuto(pasted);
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!email) return;
-
-    const code = otp.join("");
-    if (code.length !== 6) {
-      setError("Please enter the complete OTP.");
-      return;
-    }
+  const handleSubmitAuto = async (code: string) => {
+    if (!email || code.length !== 6) return;
 
     setLoading(true);
-    setError("");
+    toast.loading("Verifying OTP..."); // ✅ show loading toast
 
     const result = await signIn("credentials", {
       email,
@@ -63,12 +66,26 @@ export default function AdminOTPVerifyPage() {
     });
 
     setLoading(false);
+    toast.dismiss(); // ✅ dismiss loading
 
     if (result?.ok && !result.error) {
+      toast.success("OTP verified! Redirecting...");
       router.push("/admin");
     } else {
-      setError("Invalid or expired OTP. Please try again.");
+      setOtp(["", "", "", "", "", ""]);
+      inputRefs.current[0]?.focus();
+      toast.error("Invalid or expired OTP. Please try again.");
     }
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const code = otp.join("");
+    if (code.length !== 6) {
+      toast.error("Please enter the complete 6-digit OTP.");
+      return;
+    }
+    handleSubmitAuto(code);
   };
 
   return (
@@ -90,16 +107,17 @@ export default function AdminOTPVerifyPage() {
                 key={i}
                 type="text"
                 maxLength={1}
-                ref={(el) => { inputRefs.current[i] = el; }}
+                ref={(el) => {
+                  inputRefs.current[i] = el;
+                }}
                 value={otp[i]}
                 onChange={(e) => handleChange(i, e.target.value)}
+                onKeyDown={(e) => handleKeyDown(e, i)}
                 onPaste={handlePaste}
                 className="w-12 h-12 text-center text-lg bg-neutral-800 border border-neutral-700 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             ))}
           </div>
-
-          {error && <p className="text-red-500 text-sm text-center">{error}</p>}
 
           <button
             type="submit"
@@ -130,8 +148,16 @@ export default function AdminOTPVerifyPage() {
                 Verifying...
               </span>
             ) : (
-              "✅ Verify & Continue"
+              "Verify & Continue"
             )}
+          </button>
+
+          <button
+            type="button"
+            onClick={() => router.back()}
+            className="text-sm text-neutral-400 hover:text-white mt-2 w-full text-center"
+          >
+            ← Back to Login
           </button>
         </form>
       </div>

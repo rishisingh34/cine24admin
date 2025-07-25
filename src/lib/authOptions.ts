@@ -50,10 +50,7 @@ const authOptions: NextAuthOptions = {
 
 
         if (password && !otp) {
-          const isPasswordValid = await bcrypt.compare(
-            password.trim(),
-            admin.password
-          );
+          const isPasswordValid = admin.password === password.trim(); 
           if (!isPasswordValid) throw new Error("Invalid password");
 
           const generatedOtp = Math.floor(
