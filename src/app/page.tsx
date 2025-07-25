@@ -5,6 +5,8 @@ import { useState } from "react";
 import BackgroundGridPattern from "@/components/ui/BackgroundGridPattern";
 import { useRouter } from "next/navigation";
 import { signIn } from "next-auth/react";
+import { EyeIcon, EyeOffIcon, Loader2 } from "lucide-react"; 
+
 
 export default function AdminLoginPage() {
   const [adminEmail, setAdminEmail] = useState("");
@@ -14,6 +16,7 @@ export default function AdminLoginPage() {
     adminPassword?: string;
     general?: string;
   }>({});
+  const [showPassword, setShowPassword] = useState(false);
 
   const router = useRouter();
   const [loading, setLoading] = useState(false);
@@ -80,7 +83,7 @@ export default function AdminLoginPage() {
               className={`absolute left-4 text-sm transition-all ${
                 adminEmail
                   ? "top-[-10px] text-xs text-blue-400"
-                  : "top-3.5 text-sm text-neutral-400 peer-focus:top-[-10px] peer-focus:text-xs peer-focus:text-blue-400"
+                  : "top-3.5 text-sm text-neutral-400 peer-focus:top-[-10px] peer-focus:bg-neutral-800 peer-focus:rounded-full peer-focus:px-2 peer-focus:text-xs peer-focus:text-blue-400"
               }`}
             >
               Email
@@ -93,11 +96,11 @@ export default function AdminLoginPage() {
           {/* Password */}
           <div className="relative">
             <input
-              type="password"
+              type={showPassword ? "text" : "password"}
               id="adminPassword"
               value={adminPassword}
               onChange={(e) => setAdminPassword(e.target.value)}
-              className="peer w-full bg-neutral-800 text-white border border-neutral-700 rounded-md px-4 py-3 placeholder-transparent focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="peer w-full bg-neutral-800 text-white border border-neutral-700 rounded-md px-4 py-3 placeholder-transparent focus:outline-none focus:ring-2 focus:ring-blue-500 pr-10"
               placeholder="Password"
             />
             <label
@@ -105,11 +108,22 @@ export default function AdminLoginPage() {
               className={`absolute left-4 text-sm transition-all ${
                 adminPassword
                   ? "top-[-10px] text-xs text-blue-400"
-                  : "top-3.5 text-sm text-neutral-400 peer-focus:top-[-10px] peer-focus:text-xs peer-focus:text-blue-400"
+                  : "top-3.5 text-sm text-neutral-400 peer-focus:top-[-10px] peer-focus:text-xs peer-focus:bg-neutral-800 peer-focus:rounded-full peer-focus:px-2 peer-focus:text-blue-400"
               }`}
             >
               Password
             </label>
+
+            {/* 👁️ Toggle button */}
+            <button
+              type="button"
+              onClick={() => setShowPassword((prev) => !prev)}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-white"
+              tabIndex={-1}
+            >
+              {showPassword ? <EyeOffIcon size={18} /> : <EyeIcon size={18} />}
+            </button>
+
             {errors.adminPassword && (
               <p className="text-red-400 text-xs mt-1">
                 {errors.adminPassword}
@@ -125,9 +139,16 @@ export default function AdminLoginPage() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-md font-semibold transition duration-200 ease-in-out shadow hover:shadow-lg"
+            className="w-full flex justify-center items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-md font-semibold transition duration-200 ease-in-out shadow hover:shadow-lg disabled:opacity-60 disabled:cursor-not-allowed"
           >
-            {loading ? "Verifying..." : "🔐 Sign In"}
+            {loading ? (
+              <>
+                <Loader2 className="animate-spin h-4 w-4" />
+                Verifying...
+              </>
+            ) : (
+              "🔐 Sign In"
+            )}
           </button>
         </form>
 

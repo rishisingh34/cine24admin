@@ -5,7 +5,7 @@ import BackgroundGrid from "@/components/ui/BackgroundGridPattern";
 export default function VerifyPage() {
   return (
     <Suspense
-      fallback={<div className="text-white bg-black text-center p-8">Loading...</div>}
+      fallback={<div className="text-white bg-black h-screen text-center p-8">Loading...</div>}
     >
       <BackgroundGrid />
       <AdminOTPVerifyPage />
