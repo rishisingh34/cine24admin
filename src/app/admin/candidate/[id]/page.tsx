@@ -24,7 +24,6 @@ const skeletonField = (
 export default function CandidateDetailPage() {
   const { id } = useParams();
   const router = useRouter();
-  const [candidate, setCandidate] = useState<Candidate | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
@@ -40,11 +39,11 @@ export default function CandidateDetailPage() {
 
         if (!res.ok)
           throw new Error(data.message || "Failed to fetch candidate");
-
-        setCandidate(data.data);
         setFormData({ ...data.data });
-      } catch (err: any) {
-        toast.error(err.message || "Something went wrong");
+      } catch (err) {
+        const message =
+          err instanceof Error ? err.message : "An unknown error occurred";
+        toast.error(message);
       } finally {
         setLoading(false);
       }
@@ -77,8 +76,9 @@ export default function CandidateDetailPage() {
 
       toast.success("Candidate updated successfully!");
       router.refresh(); // or refetch if needed
-    } catch (err: any) {
-      toast.error(err.message || "Something went wrong");
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Something went wrong";
+      toast.error(msg);
     } finally {
       setSaving(false);
     }
@@ -108,15 +108,15 @@ export default function CandidateDetailPage() {
                   ].map(({ name, label, type = "text" }) => (
                     <div key={name}>
                       <label className="block mb-2 text-neutral-400">
-                        {label}
+                      {label}
                       </label>
                       <input
-                        type={type}
-                        name={name}
-                        value={(formData as any)[name]}
-                        onChange={handleChange}
-                        required
-                        className="w-full p-3 rounded-full bg-neutral-800 text-white border border-neutral-700 focus:outline-none focus:ring-2 focus:ring-neutral-600 transition"
+                      type={type}
+                      name={name}
+                      value={formData[name as keyof typeof formData] as string}
+                      onChange={handleChange}
+                      required
+                      className="w-full p-3 rounded-full bg-neutral-800 text-white border border-neutral-700 focus:outline-none focus:ring-2 focus:ring-neutral-600 transition"
                       />
                     </div>
                   ))}

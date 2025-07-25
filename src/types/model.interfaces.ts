@@ -33,6 +33,7 @@ export interface IQuestion extends mongoose.Document {
     code?: string;
     options: IOption[];
     answer: number;
+    codeLang?: string;
 }
 
 export interface ICandidate extends mongoose.Document {

@@ -10,6 +10,7 @@ export async function GET() {
     const questions = await FeedbackQuestion.find().sort({ _id: 1 });
     return NextResponse.json({ success: true, data: questions });
   } catch (error) {
+    console.error("Error fetching feedback questions:", error);
     return NextResponse.json(
       { success: false, message: "Failed to fetch questions" },
       { status: 500 }
@@ -29,6 +30,7 @@ export async function POST(req: NextRequest) {
       { status: 201 }
     );
   } catch (error) {
+    console.error("Error creating feedback question:", error);
     return NextResponse.json(
       { success: false, message: "Failed to create question" },
       { status: 400 }

@@ -21,7 +21,8 @@ export async function PUT(req: NextRequest) {
     }
 
     return NextResponse.json({ success: true, data: updated });
-  } catch (error) {
+  } catch (err) {
+    console.log(err);
     return NextResponse.json(
       { success: false, message: "Failed to update question" },
       { status: 400 }
@@ -48,7 +49,8 @@ export async function DELETE(req: NextRequest) {
       success: true,
       message: "Deleted successfully",
     });
-  } catch (error) {
+  } catch (err) {
+    console.log(err);
     return NextResponse.json(
       { success: false, message: "Failed to delete question" },
       { status: 400 }

@@ -52,8 +52,10 @@ export default function AddCandidatePage() {
 
       toast.success("Candidate added successfully!");
       router.push("/admin/candidate");
-    } catch (err: any) {
-      toast.error(err.message || "Something went wrong");
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : "An unknown error occurred";
+      toast.error(message);
     } finally {
       setLoading(false);
     }
@@ -81,7 +83,7 @@ export default function AddCandidatePage() {
               <input
                 type={type}
                 name={name}
-                value={(formData as any)[name]}
+                value={formData[name as keyof typeof formData] as string}
                 onChange={handleChange}
                 required
                 className="w-full p-3 rounded-full bg-neutral-800 text-white border border-neutral-700 focus:outline-none focus:ring-2 focus:ring-neutral-600 transition"
