@@ -1,217 +1,157 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Plus } from "lucide-react";
+import { toast } from "sonner";
+import { ChevronDown, ChevronRight } from "lucide-react";
 
-interface FeedbackQuestion {
-  _id?: string;
+interface FeedbackEntry {
   question: string;
   type: "text" | "rating";
+  answer: string | number;
 }
 
-export default function FeedbackManager() {
-  const [questions, setQuestions] = useState<FeedbackQuestion[]>([]);
-  const [activeIndex, setActiveIndex] = useState<number>(0);
-  const [currentQuestion, setCurrentQuestion] = useState<FeedbackQuestion>({
-    question: "",
-    type: "text",
-  });
-  const [edited, setEdited] = useState(false);
+interface Feedback {
+  _id: string;
+  candidateId: {
+    name: string;
+    email: string;
+  };
+  feedbacks: FeedbackEntry[];
+  createdAt: string;
+}
 
-  // Fetch all feedback questions
+export default function FeedbackPage() {
+  const [feedbacks, setFeedbacks] = useState<Feedback[]>([
+    {
+      _id: "1a2b3c",
+      candidateId: {
+        name: "Alice Johnson",
+        email: "alice.johnson@example.com",
+      },
+      feedbacks: [
+        {
+          question: "Rate the candidate's communication skills",
+          type: "rating",
+          answer: 4,
+        },
+        {
+          question: "Any additional comments?",
+          type: "text",
+          answer: "Very clear communicator and good listener.",
+        },
+      ],
+      createdAt: "2025-07-24T15:30:00.000Z",
+    },
+    {
+      _id: "4d5e6f",
+      candidateId: {
+        name: "Bob Martinez",
+        email: "bob.martinez@example.com",
+      },
+      feedbacks: [
+        {
+          question: "Rate technical problem-solving ability",
+          type: "rating",
+          answer: 5,
+        },
+        {
+          question: "Suggestions for improvement?",
+          type: "text",
+          answer: "Should work on time management.",
+        },
+      ],
+      createdAt: "2025-07-23T11:00:00.000Z",
+    },
+  ]);
+
+  const [loading, setLoading] = useState(true);
+  const [openIds, setOpenIds] = useState<Record<string, boolean>>({});
+
   useEffect(() => {
-    const fetchQuestions = async () => {
-      const res = await fetch("/api/feedback-questions");
-      const data = await res.json();
-      const loaded = data.data || [];
-      setQuestions(loaded);
-
-      // Select first question by default
-      if (loaded.length > 0) {
-        setActiveIndex(0);
-        setCurrentQuestion(loaded[0]);
+    const fetchFeedbacks = async () => {
+      try {
+        const res = await fetch("/api/feedback");
+        const data = await res.json();
+        if (!res.ok || !data.success) throw new Error(data.message);
+        setFeedbacks(data.data);
+      } catch (err) {
+        console.error("Error fetching feedbacks:", err);
+        toast.error("Failed to load feedbacks.");
+      } finally {
+        setLoading(false);
       }
     };
 
-    fetchQuestions();
+    fetchFeedbacks();
   }, []);
 
-  // Update currentQuestion when activeIndex changes
-  useEffect(() => {
-    if (questions[activeIndex]) {
-      setCurrentQuestion(questions[activeIndex]);
-      setEdited(false);
-    }
-  }, [activeIndex, questions]);
-
-  const handleChange = (field: keyof FeedbackQuestion, value: string) => {
-    setCurrentQuestion((prev) => {
-      const updated = { ...prev, [field]: value };
-      const original = questions[activeIndex] || { question: "", type: "text" };
-      setEdited(
-        updated.question !== original.question || updated.type !== original.type
-      );
-      return updated;
-    });
+  const toggleOpen = (id: string) => {
+    setOpenIds((prev) => ({ ...prev, [id]: !prev[id] }));
   };
-
-  const handleAddNew = () => {
-    const newQuestion: FeedbackQuestion = { question: "", type: "text" };
-    const updated = [...questions, newQuestion];
-    setQuestions(updated);
-    setActiveIndex(updated.length - 1);
-    setCurrentQuestion(newQuestion);
-    setEdited(true);
-  };
-
-  const handleSave = async () => {
-    try {
-      const method = currentQuestion._id ? "PUT" : "POST";
-      const endpoint =
-        "/api/feedback-questions" +
-        (currentQuestion._id ? `/${currentQuestion._id}` : "");
-
-      const res = await fetch(endpoint, {
-        method,
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(currentQuestion),
-      });
-
-      const data = await res.json();
-
-      if (data.success) {
-        const updatedList = [...questions];
-        updatedList[activeIndex] = data.data;
-        setQuestions(updatedList);
-        setEdited(false);
-        setCurrentQuestion(data.data);
-      }
-    } catch (error) {
-      console.error("Failed to save feedback question", error);
-    }
-  };
-  const handleDelete = async () => {
-    if (!currentQuestion._id) return;
-
-    try {
-      const res = await fetch(
-        `/api/feedback-questions/${currentQuestion._id}`,
-        {
-          method: "DELETE",
-        }
-      );
-
-      const data = await res.json();
-      if (data.success) {
-        const updatedList = [...questions];
-        updatedList.splice(activeIndex, 1);
-        setQuestions(updatedList);
-
-        const newIndex = Math.max(0, activeIndex - 1);
-        setActiveIndex(newIndex);
-        setCurrentQuestion(
-          updatedList[newIndex] || { question: "", type: "text" }
-        );
-        setEdited(false);
-      }
-    } catch (error) {
-      console.error("Failed to delete question", error);
-    }
-  };
-
 
   return (
-    <div className="flex min-h-screen bg-[#0f0f0f] text-white">
-      <div className="w-3/5 p-6 space-y-6">
-        <h2 className="text-2xl font-semibold mb-4">
-          Feedback Question - {activeIndex + 1}
-        </h2>
+    <div className="p-6 text-white bg-[#1e1e1e] min-h-screen">
+      <h1 className="text-2xl font-bold mb-6">Candidate Feedback</h1>
 
-        <div className="space-y-4 max-w-xl">
-          <div>
-            <label className="block mb-1 text-sm text-gray-300">Question</label>
-            <textarea
-              rows={4}
-              className="w-full p-3 bg-[#1a1a1a] border border-gray-700 rounded outline-none text-white"
-              value={currentQuestion.question}
-              onChange={(e) => handleChange("question", e.target.value)}
-            />
-          </div>
-
-          <div>
-            <label className="block mb-1 text-sm text-gray-300">Type</label>
-            <select
-              className="w-full p-3 bg-[#1a1a1a] border border-gray-700 rounded outline-none text-white"
-              value={currentQuestion.type}
-              onChange={(e) => handleChange("type", e.target.value)}
-            >
-              <option value="text">Text</option>
-              <option value="rating">Rating</option>
-            </select>
-          </div>
-
-          <div className="flex gap-4">
-            <button
-              onClick={handleDelete}
-              disabled={!currentQuestion._id}
-              className={`px-6 py-2 rounded font-medium ${
-                currentQuestion._id
-                  ? "bg-red-700 hover:bg-red-500"
-                  : "bg-gray-700 cursor-not-allowed"
-              }`}
-            >
-              Delete
-            </button>
-
-            <button
-              onClick={handleSave}
-              disabled={!edited}
-              className={`px-6 py-2 rounded font-medium ${
-                edited
-                  ? "bg-green-600 hover:bg-green-500"
-                  : "bg-gray-700 cursor-not-allowed"
-              }`}
-            >
-              Save
-            </button>
-          </div>
-        </div>
-      </div>
-
-      <div className="w-2/5 bg-[#111] p-4 border-r border-gray-800">
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="text-lg font-semibold">Questions</h2>
-          <button
-            onClick={handleAddNew}
-            className="p-2 rounded bg-blue-600 hover:bg-blue-500"
-            title="Add Question"
-          >
-            <Plus className="w-4 h-4" />
-          </button>
-        </div>
-
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-          {questions.length > 0 ? (
-            questions.map((_, index) => (
-              <button
-                key={index}
-                onClick={() => setActiveIndex(index)}
-                className={`p-3 rounded-md text-center font-semibold ${
-                  activeIndex === index
-                    ? "bg-blue-600 text-white"
-                    : "bg-[#1a1a1a] hover:bg-[#2a2a2a]"
-                }`}
+      {loading ? (
+        <p className="text-gray-400">Loading...</p>
+      ) : feedbacks.length === 0 ? (
+        <p className="text-gray-500">No feedbacks found.</p>
+      ) : (
+        <div className="space-y-4">
+          {feedbacks.map((f) => {
+            const isOpen = openIds[f._id] ?? false;
+            return (
+              <div
+                key={f._id}
+                className="bg-[#2b2b2b] rounded-lg border border-[#333]"
               >
-                {index + 1}
-              </button>
-            ))
-          ) : (
-            <div className="col-span-3 text-center text-gray-500 border border-dashed border-gray-600 p-4 rounded-md">
-              No Feedbacks
-            </div>
-          )}
+                <button
+                  onClick={() => toggleOpen(f._id)}
+                  className="w-full flex justify-between items-center px-5 py-4 focus:outline-none hover:bg-[#2f2f2f] transition-colors"
+                >
+                  <div className="text-left">
+                    <p className="font-semibold text-lg">
+                      👤 {f.candidateId.name} ({f.candidateId.email})
+                    </p>
+                    <p className="text-sm text-gray-400">
+                      Submitted: {new Date(f.createdAt).toLocaleString()}
+                    </p>
+                  </div>
+                  {isOpen ? (
+                    <ChevronDown className="text-gray-300" />
+                  ) : (
+                    <ChevronRight className="text-gray-300" />
+                  )}
+                </button>
+
+                {isOpen && (
+                  <div className="px-5 pb-5 space-y-4">
+                    {f.feedbacks.map((fb, idx) => (
+                      <div
+                        key={idx}
+                        className="border border-[#444] p-4 rounded-md bg-[#1f1f1f]"
+                      >
+                        <p className="text-sm text-gray-300">
+                          Q: {fb.question}
+                        </p>
+                        <p className="mt-1 font-medium text-orange-400">
+                          A:{" "}
+                          {fb.type === "rating" ? (
+                            <span>{fb.answer} ⭐</span>
+                          ) : (
+                            <span>{fb.answer}</span>
+                          )}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </div>
-      </div>
+      )}
     </div>
   );
 }

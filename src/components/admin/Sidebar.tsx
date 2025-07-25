@@ -11,6 +11,7 @@ import {
   LogOut,
   Menu,
   X,
+  Plus,
 } from "lucide-react";
 import Image from "next/image";
 import { useState } from "react";
@@ -29,6 +30,7 @@ const navItems = [
     icon: <MessageSquareMore size={20} />,
     href: "/admin/feedback",
   },
+  { name: "Add Feedback", icon: <Plus size={20} />, href: "/admin/add-feedback" },
   { name: "Settings", icon: <Settings size={20} />, href: "/admin/settings" },
 ];
 

@@ -1,12 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Plus, Save, ChevronLeft, ChevronRight } from "lucide-react";
-// import ReactMarkdown from "react-markdown";
-// import remarkGfm from "remark-gfm";
-// import rehypeHighlight from "rehype-highlight";
-// import "highlight.js/styles/github-dark.css";
 import Editor from "@monaco-editor/react";
+import { toast } from "sonner";
 
 const SUBJECTS = [
   "HTML",
@@ -16,17 +13,41 @@ const SUBJECTS = [
   "Java",
   "Python",
   "C",
-  "Cpp",
+  "C++",
 ];
 
 type Question = {
+  _id?: string; 
   question: string;
-  options: string[];
+  options: { id: number; desc: string }[];
   answer: number;
-  markdown: boolean; // we'll rename this to `codeMode`
-  code?: string; // new
-  codeLang?: string; // new
+  markdown: boolean;
+  code?: string;
+  codeLang?: string;
 };
+
+
+const getLangFromSubject = (subj: string): string => {
+  switch (subj.toLowerCase()) {
+    case "cpp":
+      return "cpp";
+    case "c":
+      return "c";
+    case "java":
+      return "java";
+    case "python":
+      return "python";
+    case "sql":
+      return "sql";
+    case "html":
+      return "html";
+    case "css":
+      return "css";
+    default:
+      return "plaintext";
+  }
+};
+
 
 export default function QuestionManager() {
   const [selectedSubject, setSelectedSubject] = useState("HTML");
@@ -47,10 +68,74 @@ export default function QuestionManager() {
   const currentQuestions = questions[selectedSubject];
   const current = currentQuestions[currentIndex] || {
     question: "",
-    options: ["", "", "", ""],
+    options: [
+      { id: 0, desc: "" },
+      { id: 1, desc: "" },
+      { id: 2, desc: "" },
+      { id: 3, desc: "" },
+    ],
     answer: 0,
     markdown: false,
   };
+
+  useEffect(() => {
+    const fetchQuestions = async () => {
+      try {
+        const res = await fetch("/api/question");
+        const data = await res.json();
+
+        if (!res.ok) throw new Error(data.message);
+
+        const grouped: Record<string, Question[]> = {
+          HTML: [],
+          CSS: [],
+          SQL: [],
+          Aptitude: [],
+          Java: [],
+          Python: [],
+          C: [],
+          "C++": [],
+        };
+
+        type ApiOption = { id?: number; desc?: string };
+        type ApiQuestion = {
+          _id: string;
+          question: string;
+          options: ApiOption[];
+          answer: number;
+          code?: string;
+          codeLang?: string;
+          subject: string;
+        };
+
+        (data.data as ApiQuestion[]).forEach((q) => {
+          const formatted: Question = {
+            _id: q._id,
+            question: q.question,
+            options: q.options.map((opt, idx) => ({
+              id: opt.id ?? idx,
+              desc: opt.desc ?? "",
+            })),
+            answer: q.answer,
+            code: q.code,
+            codeLang: q.codeLang,
+            markdown: !!q.code,
+          };
+
+          if (grouped[q.subject]) {
+            grouped[q.subject].push(formatted);
+          }
+        });
+        console.log("Fetched questions:", grouped);
+
+        setQuestions(grouped);
+      } catch (err) {
+        console.error("Failed to fetch questions:", err);
+      }
+    };
+
+    fetchQuestions();
+  }, []);
 
   const updateCurrent = (updated: Question) => {
     const updatedList = [...currentQuestions];
@@ -60,9 +145,10 @@ export default function QuestionManager() {
 
   const handleOptionChange = (i: number, value: string) => {
     const updated = { ...current };
-    updated.options[i] = value;
+    updated.options[i] = { ...updated.options[i], desc: value };
     updateCurrent(updated);
   };
+
 
   const handleAnswerChange = (i: number) => {
     const updated = { ...current, answer: i };
@@ -74,7 +160,12 @@ export default function QuestionManager() {
       ...currentQuestions,
       {
         question: "",
-        options: ["", "", "", ""],
+        options: [  
+          { id: 0, desc: "" },
+          { id: 1, desc: "" },
+          { id: 2, desc: "" },
+          { id: 3, desc: "" },
+        ],
         answer: 0,
         markdown: false,
       },
@@ -83,10 +174,46 @@ export default function QuestionManager() {
     setCurrentIndex(updatedList.length - 1);
   };
 
-  const handleSave = () => {
-    console.log("Saved question:", current);
-    console.log("Saved:", current);
+  const handleSave = async () => {
+    try {
+      const payload = {
+        subject: selectedSubject,
+        question: current.question,
+        options: current.options.map((opt) => ({
+          id: opt.id,
+          desc: opt.desc,
+        })),
+        answer: current.answer,
+        code: current.code || "",
+        codeLang: current.codeLang || "",
+      };
+
+      const isUpdate = !!current._id;
+
+      const res = await fetch(
+        isUpdate ? `/api/question/${current._id}` : "/api/question",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(payload),
+        }
+      );
+
+      const result = await res.json();
+      if (!res.ok) throw new Error(result.message);
+
+      const updated = { ...current, _id: result.data._id };
+      updateCurrent(updated);
+
+      toast.success("Question saved successfully!");
+    } catch (err) {
+      console.error("Failed to save question:", err);
+      toast.error("Failed to save question. See console for details.");
+    }
   };
+
 
   return (
     <div className="flex h-screen bg-[#1E1E1E] text-gray-100 overflow-hidden font-sans">
@@ -108,6 +235,18 @@ export default function QuestionManager() {
               onClick={() => {
                 setSelectedSubject(subj);
                 setCurrentIndex(0);
+
+                // Set default language for first question if missing
+                const firstQ = questions[subj][0];
+                if (firstQ && !firstQ.codeLang && firstQ.markdown) {
+                  const updated = {
+                    ...firstQ,
+                    codeLang: getLangFromSubject(subj),
+                  };
+                  const updatedList = [...questions[subj]];
+                  updatedList[0] = updated;
+                  setQuestions({ ...questions, [subj]: updatedList });
+                }
               }}
             >
               {subj}
@@ -145,6 +284,7 @@ export default function QuestionManager() {
           ))}
           <button
             onClick={handleAddQuestion}
+            aria-label="Add Question"
             className="w-8 h-8 flex items-center justify-center bg-green-500 hover:bg-green-600 text-white rounded-full text-base"
           >
             <Plus size={16} />
@@ -196,7 +336,7 @@ export default function QuestionManager() {
                 }
                 rows={5}
                 className="w-full bg-[#2B2B2B] text-white p-4 rounded-lg mt-1 resize-none focus-none placeholder:text-gray-500 text-base"
-                placeholder="Describe your coding problem or write a plain question..."
+                placeholder="Coding problem or a plain question..."
               />
             ) : (
               <div className="bg-[#2B2B2B] rounded-xl border border-[#444] shadow-md overflow-hidden">
@@ -207,7 +347,9 @@ export default function QuestionManager() {
                   </span>
                   <select
                     className="bg-[#3A3A3A] text-white text-sm p-2 rounded-md focus:outline-none focus:ring-2 focus:ring-[#f7903d]"
-                    value={selectedSubject || "python"}
+                    value={
+                      current.codeLang || getLangFromSubject(selectedSubject)
+                    }
                     onChange={(e) =>
                       updateCurrent({ ...current, codeLang: e.target.value })
                     }
@@ -219,15 +361,17 @@ export default function QuestionManager() {
                     <option value="sql">SQL</option>
                     <option value="html">HTML</option>
                     <option value="css">CSS</option>
+                    <option value="markdown">Markdown</option>
                   </select>
                 </div>
 
                 {/* Monaco Editor */}
                 <div className="bg-[#1E1E1E]">
                   <Editor
-                    height="320px"
-                    defaultLanguage={current.codeLang || "python"}
-                    language={current.codeLang || "python"}
+                    height="240px"
+                    language={
+                      current.codeLang || getLangFromSubject(selectedSubject)
+                    }
                     value={current.code || ""}
                     onChange={(val) =>
                       updateCurrent({ ...current, code: val || "" })
@@ -277,7 +421,7 @@ export default function QuestionManager() {
                     {/* Editable Option Text */}
                     <input
                       type="text"
-                      value={opt}
+                      value={opt.desc ?? ""}
                       onChange={(e) => handleOptionChange(i, e.target.value)}
                       placeholder={`Option ${i + 1}`}
                       className="w-full bg-transparent text-white text-base focus:outline-none placeholder:text-gray-300"
