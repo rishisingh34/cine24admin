@@ -53,22 +53,22 @@ function AdminDashboard() {
         {[
           {
             name: "Candidates",
-            href: "/adm/candidate",
+            href: "/admin/candidate",
             icon: <Users size={20} />,
           },
           {
             name: "Questions",
-            href: "/adm/question",
+            href: "/admin/question",
             icon: <ClipboardList size={20} />,
           },
           {
             name: "Feedbacks",
-            href: "/adm/feedback",
+            href: "/admin/feedback",
             icon: <MessageSquareMore size={20} />,
           },
           {
             name: "Analytics",
-            href: "/adm/analytics",
+            href: "/admin/analytics",
             icon: <BarChart size={20} />,
           },
         ].map((item) => (

@@ -61,7 +61,7 @@ export default function Sidebar() {
       </div>
 
       {/* Sidebar */}
-      <div className="min-h-screen bg-neutral-950 text-white flex font-bold">
+      <div className="h-screen bg-neutral-950 text-white flex font-bold">
         <aside
           className={`
             fixed z-40 w-64 h-full bg-neutral-900/70 backdrop-blur border-r border-neutral-800

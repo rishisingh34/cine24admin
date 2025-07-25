@@ -23,7 +23,7 @@ export default function RecentFeedbacksCard() {
         ))}
       </ul>
       <Link
-        href="/adm/feedback"
+        href="/admin/feedback"
         className="text-blue-500 text-sm mt-4 inline-block hover:underline"
       >
         View all feedbacks →
