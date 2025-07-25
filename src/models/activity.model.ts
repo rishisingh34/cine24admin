@@ -3,12 +3,12 @@ import mongoose from "mongoose";
 export interface IActivity extends mongoose.Document {
   candidateId: mongoose.Schema.Types.ObjectId;
   preference: number;
-  lastActivity: Date;
+  isPreferenceSet?: boolean;
+  lastLogin: Date;
   timeSpent: number;
   logInCount: number;
   adminApprovals: number;
-  lastAdminApproval: Date;
-  activityType?: string;
+  isExamCompleted?: boolean;
 }
 
 const activitySchema = new mongoose.Schema<IActivity>(
@@ -19,12 +19,11 @@ const activitySchema = new mongoose.Schema<IActivity>(
       ref: "Candidate",
     },
     preference: { type: Number, required: true }, //  { 1: "C", 2: "C++", 3: "Java", 4: "Python", 5: "JavaScript" }
-    lastActivity: { type: Date, default: Date.now },
+    isPreferenceSet: { type: Boolean, default: false },
     timeSpent: { type: Number, default: 0 },
     logInCount: { type: Number, default: 0 },
     adminApprovals: { type: Number, default: 0 },
-    lastAdminApproval: { type: Date, default: null },
-    activityType: { type: String, default: "" },
+    isExamCompleted: { type: Boolean, default: false },
   },
   { versionKey: false, timestamps: true }
 );

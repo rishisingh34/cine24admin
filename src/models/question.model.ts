@@ -15,7 +15,7 @@ const questionSchema = new mongoose.Schema<IQuestion>(
       ],
       required: true,
     },
-    correctAnswer: { type: Number, required: true },
+    answer: { type: Number, required: true },
     code: { type: String, default: "" },
   },
   { versionKey: false, timestamps: true }

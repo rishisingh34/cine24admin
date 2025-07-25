@@ -4,7 +4,7 @@ import { connectToDB } from "@/lib/db";
 import Admin from "@/models/admin.model";
 import Otp from "@/models/otp.model";
 import { sendEmailOtp } from "@/lib/mail";
-import bcrypt from "bcrypt";
+// import bcrypt from "bcrypt";
 
 declare module "next-auth" {
   interface Session extends DefaultSession {
