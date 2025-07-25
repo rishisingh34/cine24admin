@@ -23,6 +23,7 @@ declare module "next-auth" {
 }
 
 const authOptions: NextAuthOptions = {
+  secret: process.env.NEXTAUTH_SECRET,
   pages: {
     signIn: "/auth/login",
   },
@@ -48,9 +49,8 @@ const authOptions: NextAuthOptions = {
         }).select("+password");
         if (!admin || !admin.password) throw new Error("Invalid credentials");
 
-
         if (password && !otp) {
-          const isPasswordValid = admin.password === password.trim(); 
+          const isPasswordValid = admin.password === password.trim();
           if (!isPasswordValid) throw new Error("Invalid password");
 
           const generatedOtp = Math.floor(
@@ -67,7 +67,6 @@ const authOptions: NextAuthOptions = {
 
           throw new Error("OTP_SENT");
         }
-
 
         if (otp && !password) {
           const otpRecord = await Otp.findOne({ email: email.toLowerCase() });
