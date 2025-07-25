@@ -85,7 +85,11 @@ export default function Sidebar() {
 
             <nav className="space-y-2">
               {navItems.map((item) => {
-                const isActive = path === item.href;
+                let isActive = path === item.href;
+                if (item.href !== "/admin") {
+                  isActive = path.startsWith(item.href);
+                }
+                
                 return (
                   <Link
                     key={item.href}

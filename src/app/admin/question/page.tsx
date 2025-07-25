@@ -7,18 +7,6 @@ import { Plus, Save, ChevronLeft, ChevronRight } from "lucide-react";
 // import rehypeHighlight from "rehype-highlight";
 // import "highlight.js/styles/github-dark.css";
 import Editor from "@monaco-editor/react";
-import BackgroundGridPattern from "@/components/ui/BackgroundGridPattern";
-
-function normalizeMarkdown(text: string) {
-  try {
-    return text
-      .replace(/\\n/g, "\n") // Convert string \n to actual newline
-      .replace(/\\"/g, '"') // Optional: unescape quotes
-      .replace(/\\\\/g, "\\"); // Convert double backslash \\ to single \
-  } catch {
-    return text;
-  }
-}
 
 const SUBJECTS = [
   "HTML",
@@ -147,7 +135,7 @@ export default function QuestionManager() {
               key={idx}
               className={`w-8 h-8 rounded-full text-base font-semibold ${
                 currentIndex === idx
-                  ? "bg-[#f7903d] text-white"
+                  ? "bg-[#d0640c] text-white"
                   : "bg-[#3A3A3A] hover:bg-[#4A4A4A] text-gray-300"
               }`}
               onClick={() => setCurrentIndex(idx)}
@@ -305,7 +293,7 @@ export default function QuestionManager() {
         <div className="border-t border-[#444] p-4 bg-[#1A1A1A] sticky bottom-0 z-10">
           <button
             onClick={handleSave}
-            className="flex items-center gap-2 px-4 py-2 bg-[#c66210] hover:bg-[#ea812e] rounded-md text-white font-semibold text-base transition"
+            className="flex items-center gap-2 px-4 py-2 bg-[#c66210] hover:bg-[#ea812e] rounded-md text-white font-semibold text-base transition cursor-pointer"
           >
             <Save size={18} />
             Save Question

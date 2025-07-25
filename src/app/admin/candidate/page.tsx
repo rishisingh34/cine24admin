@@ -20,19 +20,46 @@ export default function CandidatePage() {
   const [candidates, setCandidates] = useState<Candidate[]>([]);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [loading, setLoading] = useState(true); // loading state
   const limit = 10;
   const router = useRouter();
 
   useEffect(() => {
     const fetchCandidates = async () => {
+      setLoading(true);
       const res = await fetch(`/api/candidate?page=${page}&limit=${limit}`);
       const data = await res.json();
       setCandidates(data.data);
       setTotalPages(data.totalPages);
+      setLoading(false);
     };
 
     fetchCandidates();
   }, [page]);
+
+  // Render 10 skeleton rows while loading
+  const skeletonRows = Array.from({ length: limit }).map((_, idx) => (
+    <tr key={idx} className="border-t border-gray-700 animate-pulse">
+      <td className="p-3">
+        <div className="h-4 bg-gray-700 rounded w-3/4" />
+      </td>
+      <td className="p-3">
+        <div className="h-4 bg-gray-700 rounded w-4/5" />
+      </td>
+      <td className="p-3">
+        <div className="h-4 bg-gray-700 rounded w-2/3" />
+      </td>
+      <td className="p-3">
+        <div className="h-4 bg-gray-700 rounded w-1/2" />
+      </td>
+      <td className="p-3">
+        <div className="h-4 bg-gray-700 rounded w-3/5" />
+      </td>
+      <td className="p-3">
+        <div className="h-4 bg-gray-700 rounded w-2/5" />
+      </td>
+    </tr>
+  ));
 
   return (
     <div className="min-h-screen bg-black text-white relative overflow-hidden">
@@ -63,22 +90,24 @@ export default function CandidatePage() {
               </tr>
             </thead>
             <tbody>
-              {candidates.map((candidate) => (
-                <tr
-                  key={candidate._id}
-                  onClick={() =>
-                    router.push(`/admin/candidate/${candidate._id}`)
-                  }
-                  className="border-t border-gray-700 hover:bg-[#1c1c1c] cursor-pointer"
-                >
-                  <td className="p-3">{candidate.name}</td>
-                  <td className="p-3">{candidate.email}</td>
-                  <td className="p-3">{candidate.phone}</td>
-                  <td className="p-3">{candidate.branch}</td>
-                  <td className="p-3">{candidate.residence}</td>
-                  <td className="p-3">{candidate.gender}</td>
-                </tr>
-              ))}
+              {loading
+                ? skeletonRows
+                : candidates.map((candidate) => (
+                    <tr
+                      key={candidate._id}
+                      onClick={() =>
+                        router.push(`/admin/candidate/${candidate._id}`)
+                      }
+                      className="border-t border-gray-700 hover:bg-[#1c1c1c] cursor-pointer"
+                    >
+                      <td className="p-3">{candidate.name}</td>
+                      <td className="p-3">{candidate.email}</td>
+                      <td className="p-3">{candidate.phone}</td>
+                      <td className="p-3">{candidate.branch}</td>
+                      <td className="p-3">{candidate.residence}</td>
+                      <td className="p-3">{candidate.gender}</td>
+                    </tr>
+                  ))}
             </tbody>
           </table>
         </div>
@@ -87,7 +116,7 @@ export default function CandidatePage() {
         <div className="mt-6 flex justify-center items-center gap-4">
           <button
             onClick={() => setPage((p) => Math.max(p - 1, 1))}
-            disabled={page === 1}
+            disabled={page === 1 || loading}
             className="px-4 py-2 rounded bg-gray-800 text-white hover:bg-gray-700 disabled:opacity-40"
           >
             Previous
@@ -97,7 +126,7 @@ export default function CandidatePage() {
           </span>
           <button
             onClick={() => setPage((p) => Math.min(p + 1, totalPages))}
-            disabled={page === totalPages}
+            disabled={page === totalPages || loading}
             className="px-4 py-2 rounded bg-gray-800 text-white hover:bg-gray-700 disabled:opacity-40"
           >
             Next
