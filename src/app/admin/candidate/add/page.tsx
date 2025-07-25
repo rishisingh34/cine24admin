@@ -103,6 +103,7 @@ export default function AddCandidatePage() {
               <option value="">Select Residence</option>
               <option value="Hostel A">Hostel</option>
               <option value="Day Scholar">Day Scholar</option>
+              <option value="Outstation">Other</option>
             </select>
           </div>
 

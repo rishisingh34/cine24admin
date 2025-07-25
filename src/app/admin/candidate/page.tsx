@@ -1,8 +1,10 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo, useCallback } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import debounce from "lodash/debounce";
+import throttle from "lodash/throttle";
 
 type Candidate = {
   _id: string;
@@ -20,14 +22,64 @@ export default function CandidatePage() {
   const [candidates, setCandidates] = useState<Candidate[]>([]);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
-  const [loading, setLoading] = useState(true); // loading state
+  const [loading, setLoading] = useState(true);
+
+  const [search, setSearch] = useState("");
+  const [filters, setFilters] = useState({
+    gender: "",
+    branch: "",
+    residence: "",
+  });
+
   const limit = 10;
   const router = useRouter();
+
+  // Debounced and throttled versions of search/filter state
+  const [debouncedSearch, setDebouncedSearch] = useState(search);
+  const [throttledFilters, setThrottledFilters] = useState(filters);
+
+  // Debounce search input (300ms)
+  const debouncedSetSearch = useMemo(
+    () =>
+      debounce((value: string) => {
+        setDebouncedSearch(value);
+      }, 300),
+    []
+  );
+
+  // Throttle filters (update at most once per 1s)
+  const throttledSetFilter = useMemo(
+    () =>
+      throttle((value: typeof filters) => {
+        setThrottledFilters(value);
+      }, 1000),
+    []
+  );
+
+  useEffect(() => {
+    debouncedSetSearch(search);
+  }, [search, debouncedSetSearch]);
+
+  useEffect(() => {
+    throttledSetFilter(filters);
+  }, [filters, throttledSetFilter]);
 
   useEffect(() => {
     const fetchCandidates = async () => {
       setLoading(true);
-      const res = await fetch(`/api/candidate?page=${page}&limit=${limit}`);
+
+      const query = new URLSearchParams({
+        page: page.toString(),
+        limit: limit.toString(),
+        ...(debouncedSearch && { search: debouncedSearch }),
+        ...(throttledFilters.gender && { gender: throttledFilters.gender }),
+        ...(throttledFilters.branch && { branch: throttledFilters.branch }),
+        ...(throttledFilters.residence && {
+          residence: throttledFilters.residence,
+        }),
+      });
+
+      const res = await fetch(`/api/candidate?${query.toString()}`);
       const data = await res.json();
       setCandidates(data.data);
       setTotalPages(data.totalPages);
@@ -35,9 +87,15 @@ export default function CandidatePage() {
     };
 
     fetchCandidates();
-  }, [page]);
+  }, [page, debouncedSearch, throttledFilters]);
 
-  // Render 10 skeleton rows while loading
+  const handleFilterChange = (field: keyof typeof filters, value: string) => {
+    setFilters((prev) => ({
+      ...prev,
+      [field]: value,
+    }));
+  };
+
   const skeletonRows = Array.from({ length: limit }).map((_, idx) => (
     <tr key={idx} className="border-t border-gray-700 animate-pulse">
       <td className="p-3">
@@ -63,7 +121,6 @@ export default function CandidatePage() {
 
   return (
     <div className="min-h-screen bg-black text-white relative overflow-hidden">
-      {/* Grid Pattern Background */}
       <div className="absolute inset-0 opacity-5 bg-[radial-gradient(#ffffff33_1px,transparent_1px)] [background-size:20px_20px] pointer-events-none z-0" />
 
       <div className="relative z-10 p-6">
@@ -77,6 +134,50 @@ export default function CandidatePage() {
           </Link>
         </div>
 
+        {/* Search and Filters */}
+        <div className="flex flex-wrap items-center gap-4 mb-6">
+          <input
+            type="text"
+            placeholder="Search by name, email, number..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="px-4 py-2 rounded bg-[#1a1a1a] border border-gray-700 text-white w-40 lg:w-80 md:w-100"
+          />
+
+          <select
+            value={filters.gender}
+            onChange={(e) => handleFilterChange("gender", e.target.value)}
+            className="px-4 py-2 rounded bg-[#1a1a1a] border border-gray-700 text-white"
+          >
+            <option value="">All Genders</option>
+            <option value="Male">Male</option>
+            <option value="Female">Female</option>
+          </select>
+
+          <select
+            value={filters.branch}
+            onChange={(e) => handleFilterChange("branch", e.target.value)}
+            className="px-4 py-2 rounded bg-[#1a1a1a] border border-gray-700 text-white"
+          >
+            <option value="">All Branches</option>
+            <option value="CSE">CSE</option>
+            <option value="ECE">ECE</option>
+            <option value="ME">ME</option>
+          </select>
+
+          <select
+            value={filters.residence}
+            onChange={(e) => handleFilterChange("residence", e.target.value)}
+            className="px-4 py-2 rounded bg-[#1a1a1a] border border-gray-700 text-white"
+          >
+            <option value="">All Residences</option>
+            <option value="Hosteller">Hosteller</option>
+            <option value="Day Scholar">Day Scholar</option>
+            <option value="Outstation">Other</option>
+          </select>
+        </div>
+
+        {/* Table */}
         <div className="overflow-x-auto">
           <table className="w-full border border-gray-700 shadow-xl rounded-lg bg-[#0f0f0f]">
             <thead className="bg-[#1a1a1a] text-gray-300">
@@ -112,7 +213,7 @@ export default function CandidatePage() {
           </table>
         </div>
 
-        {/* Pagination Controls */}
+        {/* Pagination */}
         <div className="mt-6 flex justify-center items-center gap-4">
           <button
             onClick={() => setPage((p) => Math.max(p - 1, 1))}

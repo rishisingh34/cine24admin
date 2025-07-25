@@ -207,7 +207,7 @@ export default function QuestionManager() {
                   </span>
                   <select
                     className="bg-[#3A3A3A] text-white text-sm p-2 rounded-md focus:outline-none focus:ring-2 focus:ring-[#f7903d]"
-                    value={current.codeLang || "python"}
+                    value={selectedSubject || "python"}
                     onChange={(e) =>
                       updateCurrent({ ...current, codeLang: e.target.value })
                     }
