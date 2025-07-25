@@ -2,18 +2,23 @@ import { DefaultSession, NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import { connectToDB } from "@/lib/db";
 import Admin from "@/models/admin.model";
+import Otp from "@/models/otp.model";
+import { sendEmailOtp } from "@/lib/mail";
+import bcrypt from "bcrypt";
 
 declare module "next-auth" {
   interface Session extends DefaultSession {
     user: {
       id: string;
       role: string;
+      email: string;
     } & DefaultSession["user"];
   }
 
   interface User {
     id: string;
     role: string;
+    email: string;
   }
 }
 
@@ -30,79 +35,77 @@ const authOptions: NextAuthOptions = {
       credentials: {
         email: { type: "text" },
         password: { type: "password" },
-        role: { type: "text" },
         otp: { type: "text" },
       },
       async authorize(credentials) {
-        if (!credentials) throw new Error("No credentials provided");
+        const { email, password, otp } = credentials || {};
+        if (!email) throw new Error("Email is required");
 
-        const { email, password, role, otp } = credentials;
+        await connectToDB();
 
-        if (!email || !password || !role) {
-          throw new Error("All fields are required");
-        }
+        const admin = await Admin.findOne({
+          email: email.toLowerCase(),
+        }).select("+password");
+        if (!admin || !admin.password) throw new Error("Invalid credentials");
 
-        if (role !== "admin" && role !== "moderator") {
-          throw new Error("Access denied");
-        }
 
-        try {
-          await connectToDB();
+        if (password && !otp) {
+          const isPasswordValid = await bcrypt.compare(
+            password.trim(),
+            admin.password
+          );
+          if (!isPasswordValid) throw new Error("Invalid password");
 
-          const user = await Admin.findOne({
-            email: email.toLowerCase(),
-            role,
-          }).select("+password");
+          const generatedOtp = Math.floor(
+            100000 + Math.random() * 900000
+          ).toString();
 
-          if (!user || !user.password) {
-            throw new Error("Invalid credentials");
-          }
-
-          const isPasswordValid = await user.comparePassword(password);
-          if (!isPasswordValid) throw new Error("Invalid credentials");
-
-          if (!otp) {
-            throw new Error("OTP required");
-          }
-
-          const otpVerification = await fetch(
-            `${process.env.NEXTAUTH_URL}/api/auth/verify-otp`,
-            {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ email, otp }),
-            }
+          await Otp.findOneAndUpdate(
+            { email: email.toLowerCase() },
+            { email: email.toLowerCase(), otp: generatedOtp },
+            { upsert: true, new: true }
           );
 
-          const data = await otpVerification.json();
+          await sendEmailOtp(email.toLowerCase(), generatedOtp);
 
-          const isOtpValid = data.message === "OTP verified successfully";
+          throw new Error("OTP_SENT");
+        }
+
+
+        if (otp && !password) {
+          const otpRecord = await Otp.findOne({ email: email.toLowerCase() });
+          const isOtpValid = otpRecord?.otp === otp.trim();
+
           if (!isOtpValid) throw new Error("Invalid or expired OTP");
 
+          await Otp.deleteOne({ email: email.toLowerCase() });
+
           return {
-            id: user._id.toString(),
-            name: user.name,
-            email: user.email,
-            role: user.role,
+            id: admin._id.toString(),
+            name: admin.name,
+            email: admin.email,
+            role: admin.role,
           };
-        } catch (error) {
-          throw new Error(
-            error instanceof Error ? error.message : "Authentication failed"
-          );
         }
+
+        throw new Error("Invalid login flow");
       },
     }),
   ],
   callbacks: {
     async jwt({ token, user }) {
       if (user) {
+        token.id = user.id;
         token.role = user.role;
+        token.email = user.email;
       }
       return token;
     },
     async session({ session, token }) {
       if (session.user) {
+        session.user.id = token.id as string;
         session.user.role = token.role as string;
+        session.user.email = token.email as string;
       }
       return session;
     },

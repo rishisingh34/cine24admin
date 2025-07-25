@@ -3,34 +3,53 @@
 import Image from "next/image";
 import { useState } from "react";
 import BackgroundGridPattern from "@/components/ui/BackgroundGridPattern";
-import { redirect } from "next/navigation";
+import { useRouter } from "next/navigation";
+import { signIn } from "next-auth/react";
 
-export default function Home() {
+export default function AdminLoginPage() {
   const [adminEmail, setAdminEmail] = useState("");
   const [adminPassword, setAdminPassword] = useState("");
   const [errors, setErrors] = useState<{
     adminEmail?: string;
     adminPassword?: string;
+    general?: string;
   }>({});
 
-  const handleAdminLogin = (e: React.FormEvent) => {
-    e.preventDefault();
-    const newErrors: typeof errors = {};
+  const router = useRouter();
+  const [loading, setLoading] = useState(false);
 
-    if (!adminEmail.trim())
-      newErrors.adminEmail = "Email is required.";
+  const handleAdminLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setErrors({});
+    setLoading(true);
+
+    const newErrors: typeof errors = {};
+    if (!adminEmail.trim()) newErrors.adminEmail = "Email is required.";
     if (!adminPassword.trim())
       newErrors.adminPassword = "Password is required.";
 
-    setErrors(newErrors);
-
-    if (Object.keys(newErrors).length === 0) {
-      // Proceed with login (e.g., API call)
-      console.log("Logging in admin:", { adminEmail, adminPassword });
-
-      redirect("/admin");
-      // Add success toast / redirect here
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      setLoading(false);
+      return;
     }
+
+    const result = await signIn("credentials", {
+      email: adminEmail,
+      password: adminPassword,
+      redirect: false,
+    });
+
+    if (result?.error === "OTP_SENT") {
+      router.push(`/verify?email=${encodeURIComponent(adminEmail)}`);
+    } else if (result?.error) {
+      setErrors({ general: result.error });
+    } else {
+      // In case someone bypassed OTP (shouldn't happen)
+      router.push("/admin");
+    }
+
+    setLoading(false);
   };
 
   return (
@@ -67,9 +86,7 @@ export default function Home() {
               Email
             </label>
             {errors.adminEmail && (
-              <p className="text-red-400 text-xs mt-1">
-                {errors.adminEmail}
-              </p>
+              <p className="text-red-400 text-xs mt-1">{errors.adminEmail}</p>
             )}
           </div>
 
@@ -100,12 +117,17 @@ export default function Home() {
             )}
           </div>
 
+          {errors.general && (
+            <p className="text-red-500 text-sm text-center">{errors.general}</p>
+          )}
+
           {/* Submit */}
           <button
             type="submit"
+            disabled={loading}
             className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-md font-semibold transition duration-200 ease-in-out shadow hover:shadow-lg"
           >
-            🔐 Sign In
+            {loading ? "Verifying..." : "🔐 Sign In"}
           </button>
         </form>
 
