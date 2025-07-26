@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { Plus, Save, ChevronLeft, ChevronRight } from "lucide-react";
 import Editor from "@monaco-editor/react";
 import { toast } from "sonner";
+import Loader from "@/components/ui/Loader";
 
 const SUBJECTS = [
   "HTML",
@@ -64,6 +65,7 @@ export default function QuestionManager() {
 
   const [currentIndex, setCurrentIndex] = useState(0);
   const [showSubjects, setShowSubjects] = useState(true);
+  const [loading, setLoading] = useState(true); 
 
   const currentQuestions = questions[selectedSubject];
   const current = currentQuestions[currentIndex] || {
@@ -80,6 +82,7 @@ export default function QuestionManager() {
 
   useEffect(() => {
     const fetchQuestions = async () => {
+      setLoading(true);
       try {
         const res = await fetch("/api/question");
         const data = await res.json();
@@ -131,6 +134,8 @@ export default function QuestionManager() {
         setQuestions(grouped);
       } catch (err) {
         console.error("Failed to fetch questions:", err);
+      } finally {
+        setLoading(false);
       }
     };
 
@@ -223,7 +228,8 @@ export default function QuestionManager() {
           showSubjects ? "w-40 p-4" : "w-0 p-0"
         } transition-all duration-300 overflow-hidden bg-[#181818]`}
       >
-        <div className="flex flex-col gap-2">
+        
+          <div className="flex flex-col gap-2">
           {SUBJECTS.map((subj) => (
             <button
               key={subj}
@@ -266,6 +272,11 @@ export default function QuestionManager() {
       </div>
 
       {/* Main Area */}
+      {loading ? (
+          <div className="flex items-center justify-center w-full h-full">
+            <Loader />
+          </div>
+        ):( 
       <div className="flex-1 flex flex-col bg-[#1E1E1E]">
         {/* Question Number Selector */}
         <div className="p-4 border-b border-[#444] flex flex-wrap gap-2">
@@ -432,6 +443,7 @@ export default function QuestionManager() {
             </div>
           </div>
         </div>
+      
 
         {/* Sticky Save Button */}
         <div className="border-t border-[#444] p-4 bg-[#1A1A1A] sticky bottom-0 z-10">
@@ -444,6 +456,7 @@ export default function QuestionManager() {
           </button>
         </div>
       </div>
+      )}
     </div>
   );
 }

@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { ChevronDown, ChevronRight } from "lucide-react";
+import Loader from "@/components/ui/Loader";
 
 interface FeedbackEntry {
   question: string;
@@ -21,48 +22,7 @@ interface Feedback {
 }
 
 export default function FeedbackPage() {
-  const [feedbacks, setFeedbacks] = useState<Feedback[]>([
-    {
-      _id: "1a2b3c",
-      candidateId: {
-        name: "Alice Johnson",
-        email: "alice.johnson@example.com",
-      },
-      feedbacks: [
-        {
-          question: "Rate the candidate's communication skills",
-          type: "rating",
-          answer: 4,
-        },
-        {
-          question: "Any additional comments?",
-          type: "text",
-          answer: "Very clear communicator and good listener.",
-        },
-      ],
-      createdAt: "2025-07-24T15:30:00.000Z",
-    },
-    {
-      _id: "4d5e6f",
-      candidateId: {
-        name: "Bob Martinez",
-        email: "bob.martinez@example.com",
-      },
-      feedbacks: [
-        {
-          question: "Rate technical problem-solving ability",
-          type: "rating",
-          answer: 5,
-        },
-        {
-          question: "Suggestions for improvement?",
-          type: "text",
-          answer: "Should work on time management.",
-        },
-      ],
-      createdAt: "2025-07-23T11:00:00.000Z",
-    },
-  ]);
+  const [feedbacks, setFeedbacks] = useState<Feedback[]>([]);
 
   const [loading, setLoading] = useState(true);
   const [openIds, setOpenIds] = useState<Record<string, boolean>>({});
@@ -90,11 +50,11 @@ export default function FeedbackPage() {
   };
 
   return (
-    <div className="p-6 text-white bg-[#1e1e1e] min-h-screen">
+    <div className="p-6 text-white bg-[#1e1e1e] h-screen overflow-y-auto">
       <h1 className="text-2xl font-bold mb-6">Candidate Feedback</h1>
 
       {loading ? (
-        <p className="text-gray-400">Loading...</p>
+        <Loader />
       ) : feedbacks.length === 0 ? (
         <p className="text-gray-500">No feedbacks found.</p>
       ) : (

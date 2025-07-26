@@ -1,9 +1,11 @@
 import { NextResponse } from "next/server";
 import Feedback from "@/models/feedback.model";
 import { connectToDB } from "@/lib/db";
+import Candidate from "@/models/candidate.model";
 
 export async function GET() {
   try {
+    console.log(Candidate);
     await connectToDB();
     const feedbacks = await Feedback.find().populate(
       "candidateId",

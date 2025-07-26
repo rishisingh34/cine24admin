@@ -34,11 +34,9 @@ export default function CandidatePage() {
   const limit = 10;
   const router = useRouter();
 
-  // Debounced and throttled versions of search/filter state
   const [debouncedSearch, setDebouncedSearch] = useState(search);
   const [throttledFilters, setThrottledFilters] = useState(filters);
 
-  // Debounce search input (300ms)
   const debouncedSetSearch = useMemo(
     () =>
       debounce((value: string) => {
@@ -46,8 +44,6 @@ export default function CandidatePage() {
       }, 300),
     []
   );
-
-  // Throttle filters (update at most once per 1s)
   const throttledSetFilter = useMemo(
     () =>
       throttle((value: typeof filters) => {
@@ -96,25 +92,49 @@ export default function CandidatePage() {
     }));
   };
 
-  const skeletonRows = Array.from({ length: limit }).map((_, idx) => (
-    <tr key={idx} className="border-t border-gray-700 animate-pulse">
-      <td className="p-3">
-        <div className="h-4 bg-gray-700 rounded w-3/4" />
-      </td>
-      <td className="p-3">
-        <div className="h-4 bg-gray-700 rounded w-4/5" />
-      </td>
-      <td className="p-3">
-        <div className="h-4 bg-gray-700 rounded w-2/3" />
-      </td>
-      <td className="p-3">
-        <div className="h-4 bg-gray-700 rounded w-1/2" />
-      </td>
-      <td className="p-3">
-        <div className="h-4 bg-gray-700 rounded w-3/5" />
-      </td>
-      <td className="p-3">
-        <div className="h-4 bg-gray-700 rounded w-2/5" />
+  const skeletonRows = Array.from({ length: 1 }).map((_, idx) => (
+    <tr key={idx}>
+      <td colSpan={6} className="p-6 text-center">
+        <div className="flex justify-center items-center h-16">
+          <div className="pulse-loader">
+            <span />
+            <span />
+            <span />
+          </div>
+          <style>
+            {`
+              .pulse-loader {
+                display: flex;
+                gap: 8px;
+              }
+              .pulse-loader span {
+                display: block;
+                width: 12px;
+                height: 12px;
+                border-radius: 50%;
+                background: #6366f1;
+                opacity: 0.7;
+                animation: pulse 1s infinite;
+              }
+              .pulse-loader span:nth-child(2) {
+                animation-delay: 0.2s;
+              }
+              .pulse-loader span:nth-child(3) {
+                animation-delay: 0.4s;
+              }
+              @keyframes pulse {
+                0%, 100% {
+                  transform: scale(1);
+                  opacity: 0.7;
+                }
+                50% {
+                  transform: scale(1.4);
+                  opacity: 1;
+                }
+              }
+            `}
+          </style>
+        </div>
       </td>
     </tr>
   ));
