@@ -1,4 +1,5 @@
 import mongoose, { Schema, Document } from 'mongoose';
+import bcrypt from 'bcrypt';
 
 export interface IAdmin extends Document {
     name: string;
@@ -20,5 +21,21 @@ const AdminSchema = new Schema<IAdmin>(
         timestamps: true,
     }
 );
+
+AdminSchema.pre<IAdmin>("save", async function (next) {
+  if (!this.isModified("password")) return next();
+
+  try {
+    const salt = await bcrypt.genSalt(10);
+    this.password = await bcrypt.hash(this.password, salt);
+    next();
+  } catch (err) {
+    if (err instanceof mongoose.Error) {
+      next(err);
+    } else {
+      next(new mongoose.Error("Unknown error in password hashing"));
+    }
+  }
+});
 
 export default mongoose.models.Admin || mongoose.model<IAdmin>('Admin', AdminSchema);

@@ -4,7 +4,7 @@ import { connectToDB } from "@/lib/db";
 import Admin from "@/models/admin.model";
 import Otp from "@/models/otp.model";
 import { sendEmailOtp } from "@/lib/mail";
-// import bcrypt from "bcrypt";
+import bcrypt from "bcrypt";
 
 declare module "next-auth" {
   interface Session extends DefaultSession {
@@ -50,7 +50,8 @@ const authOptions: NextAuthOptions = {
         if (!admin || !admin.password) throw new Error("Invalid credentials");
 
         if (password && !otp) {
-          const isPasswordValid = admin.password === password.trim();
+          // const isPasswordValid = admin.password === password.trim();
+          const isPasswordValid = await bcrypt.compare(password.trim(), admin.password); 
           if (!isPasswordValid) throw new Error("Invalid password");
 
           const generatedOtp = Math.floor(
