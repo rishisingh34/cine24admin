@@ -9,6 +9,7 @@ export interface IActivity extends mongoose.Document {
   logInCount: number;
   adminApprovals: number;
   isExamCompleted?: boolean;
+  dismissalReason?: string;
 }
 
 const activitySchema = new mongoose.Schema<IActivity>(
@@ -24,6 +25,7 @@ const activitySchema = new mongoose.Schema<IActivity>(
     logInCount: { type: Number, default: 0 },
     adminApprovals: { type: Number, default: 0 },
     isExamCompleted: { type: Boolean, default: false },
+    dismissalReason: { type: String, default: null },
   },
   { versionKey: false, timestamps: true }
 );
