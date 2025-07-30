@@ -1,89 +1,117 @@
 "use client";
 
-import React from "react";
-import Link from "next/link";
-import {
-  ClipboardList,
-  Users,
-  MessageSquareMore,
-  Plus,
-  BarChart,
-} from "lucide-react";
-import StatsOverviewCard from "@/components/admin/dashboard/StatsOverviewCard";
-import LeaderboardCard from "@/components/admin/dashboard/LeaderboardCard";
-import RecentFeedbacksCard from "@/components/admin/dashboard/RecentFeedbacksCard";
-import RecentCandidatesCard from "@/components/admin/dashboard/RecentCandidatesCard";
-import SystemLogsCard from "@/components/admin/dashboard/SystemLogsCard";
+import React, { useEffect, useState } from "react";
+import { useSocketStore } from "@/stores/socketstore";
+
+const PAGE_SIZE = 10;
 
 function AdminDashboard() {
-  return (
-    <div className="space-y-8">
-      {/* Page Header */}
-      <div className="flex items-center justify-between flex-wrap gap-4">
-        <h1 className="text-2xl font-bold text-white">Admin Dashboard</h1>
-        <Link
-          href="/adm/question/create"
-          className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md transition"
-        >
-          <Plus size={18} /> Add Question
-        </Link>
-      </div>
+    const { initSocket, leaderboard } = useSocketStore();
+    const [currentPage, setCurrentPage] = useState(1);
 
-      {/* System Logs (Top Right fixed-sized) */}
-      <div className="flex justify-end">
-        <SystemLogsCard />
-      </div>
+    useEffect(() => {
+        initSocket();
+    }, [initSocket]);
 
-      {/* Stats + Leaderboard */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        <StatsOverviewCard />
-        <div className="lg:col-span-2">
-          <LeaderboardCard />
+    const totalPages = Math.ceil(leaderboard.length / PAGE_SIZE);
+    const paginatedLeaderboard = leaderboard.slice(
+        (currentPage - 1) * PAGE_SIZE,
+        currentPage * PAGE_SIZE
+    );
+
+    const goToPreviousPage = () => {
+        setCurrentPage((prev) => Math.max(prev - 1, 1));
+    };
+
+    const goToNextPage = () => {
+        setCurrentPage((prev) => Math.min(prev + 1, totalPages));
+    };
+
+    return (
+        <div className="space-y-8 p-4">
+            <h1 className="text-3xl font-bold text-white">Leaderboard</h1>
+
+            <div className="bg-neutral-900 border border-neutral-800 rounded-xl p-6 shadow-md">
+                <div className="overflow-x-auto">
+                    <table className="min-w-full text-sm text-left text-white border-separate border-spacing-y-2">
+                        <thead className="bg-neutral-800 rounded">
+                            <tr>
+                                <th className="px-4 py-3">#</th>
+                                <th className="px-4 py-3">Name</th>
+                                <th className="px-4 py-3">Student No</th>
+                                <th className="px-4 py-3">Email</th>
+                                <th className="px-4 py-3">Gender</th>
+                                <th className="px-4 py-3">Score</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {paginatedLeaderboard.length === 0 ? (
+                                <tr>
+                                    <td
+                                        colSpan={6}
+                                        className="px-4 py-6 text-center text-neutral-400"
+                                    >
+                                        Loading leaderboard...
+                                    </td>
+                                </tr>
+                            ) : (
+                                paginatedLeaderboard.map((entry, idx) => (
+                                    <tr
+                                        key={entry.email}
+                                        className="bg-neutral-800 hover:bg-neutral-700 transition rounded"
+                                    >
+                                        <td className="px-4 py-3 font-semibold text-white">
+                                            {(currentPage - 1) * PAGE_SIZE +
+                                                idx +
+                                                1}
+                                        </td>
+                                        <td className="px-4 py-3">
+                                            {entry.name}
+                                        </td>
+                                        <td className="px-4 py-3">
+                                            {entry.studentNumber}
+                                        </td>
+                                        <td className="px-4 py-3">
+                                            {entry.email}
+                                        </td>
+                                        <td className="px-4 py-3 capitalize">
+                                            {entry.gender}
+                                        </td>
+                                        <td className="px-4 py-3 font-bold text-green-400">
+                                            {entry.score}
+                                        </td>
+                                    </tr>
+                                ))
+                            )}
+                        </tbody>
+                    </table>
+                </div>
+
+                {/* Pagination Controls */}
+                {totalPages > 1 && (
+                    <div className="flex justify-between items-center mt-6">
+                        <button
+                            onClick={goToPreviousPage}
+                            disabled={currentPage === 1}
+                            className="px-4 py-2 rounded bg-neutral-700 hover:bg-neutral-600 text-white disabled:opacity-40 disabled:cursor-not-allowed"
+                        >
+                            Previous
+                        </button>
+                        <span className="text-sm text-white">
+                            Page {currentPage} of {totalPages}
+                        </span>
+                        <button
+                            onClick={goToNextPage}
+                            disabled={currentPage === totalPages}
+                            className="px-4 py-2 rounded bg-neutral-700 hover:bg-neutral-600 text-white disabled:opacity-40 disabled:cursor-not-allowed"
+                        >
+                            Next
+                        </button>
+                    </div>
+                )}
+            </div>
         </div>
-      </div>
-
-      {/* Recent Feedbacks and Candidates */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <RecentFeedbacksCard />
-        <RecentCandidatesCard />
-      </div>
-
-      {/* Mobile Navigation Cards */}
-      <div className="md:hidden grid grid-cols-2 gap-4 mt-8">
-        {[
-          {
-            name: "Candidates",
-            href: "/admin/candidate",
-            icon: <Users size={20} />,
-          },
-          {
-            name: "Questions",
-            href: "/admin/question",
-            icon: <ClipboardList size={20} />,
-          },
-          {
-            name: "Feedbacks",
-            href: "/admin/feedback",
-            icon: <MessageSquareMore size={20} />,
-          },
-          {
-            name: "Analytics",
-            href: "/admin/analytics",
-            icon: <BarChart size={20} />,
-          },
-        ].map((item) => (
-          <Link
-            key={item.name}
-            href={item.href}
-            className="flex flex-col items-center justify-center bg-neutral-900 border border-neutral-800 p-4 rounded-xl text-white hover:bg-neutral-800"
-          >
-            {item.icon}
-            <span className="mt-2 text-sm">{item.name}</span>
-          </Link>
-        ))}
-      </div>
-    </div>
-  );
+    );
 }
 
 export default AdminDashboard;
