@@ -36,7 +36,7 @@ export const useSocketStore = create<SocketState>((set, get) => ({
             const { token } = await response.json();
 
             const ws = new WebSocket(
-                `ws://localhost:8080/admin?token=${token}`
+                `wss://apicine.rishirajsingh.in/admin?token=${token}`
             );
 
             ws.onopen = () => {
