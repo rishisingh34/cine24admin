@@ -18,6 +18,8 @@ type SocketState = {
     fetchLeaderboard: () => void;
 };
 
+const websocketUrl = process.env.NEXT_PUBLIC_WEBSOCKET_URL as string;
+
 export const useSocketStore = create<SocketState>((set, get) => ({
     socket: null,
     leaderboard: [],
@@ -36,7 +38,7 @@ export const useSocketStore = create<SocketState>((set, get) => ({
             const { token } = await response.json();
 
             const ws = new WebSocket(
-                `wss://apicine.rishirajsingh.in/app/admin?token=${token}`
+                `${websocketUrl}/admin?token=${token}`
             );
 
             ws.onopen = () => {

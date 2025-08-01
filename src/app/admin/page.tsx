@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import { useSocketStore } from "@/stores/socketstore";
+import Loader from "@/components/ui/Loader";
 
 const PAGE_SIZE = 10;
 
@@ -51,7 +52,7 @@ function AdminDashboard() {
                                         colSpan={6}
                                         className="px-4 py-6 text-center text-neutral-400"
                                     >
-                                        Loading leaderboard...
+                                        <Loader />
                                     </td>
                                 </tr>
                             ) : (
