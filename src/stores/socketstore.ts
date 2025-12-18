@@ -69,10 +69,18 @@ export const useSocketStore = create<SocketState>((set, get) => ({
                 console.error("WebSocket error:", error);
             };
 
-            ws.onclose = () => {
-                console.warn("WebSocket closed");
+            // ws.onclose = () => {
+            //     console.warn("WebSocket closed");
+            //     set({ socket: null });
+            // };
+
+            ws.onclose = (event) => {
+                console.warn(
+                    `WebSocket closed. Code=${event.code}, Reason=${event.reason}, WasClean=${event.wasClean}`
+                );
                 set({ socket: null });
             };
+
 
             set({ socket: ws });
         } catch (err) {

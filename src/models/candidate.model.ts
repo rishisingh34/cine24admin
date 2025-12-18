@@ -14,25 +14,14 @@ const candidateSchema = new mongoose.Schema<ICandidate>(
     password: { type: String, required: true },
     isVerified: { type: Boolean, default: false },
   },
-  { versionKey: false, timestamps: true }
+  { timestamps: true, versionKey: false }
 );
 
-candidateSchema.pre("save", async function (next) {
-  const candidate = this as ICandidate;
+candidateSchema.pre("save", async function () {
+  if (!this.isModified("password")) return;
 
-  if (!candidate.isModified("password")) return next();
-
-  try {
-    const salt = await bcrypt.genSalt(10);
-    candidate.password = await bcrypt.hash(candidate.password, salt);
-    next();
-  } catch (err) {
-    if (err instanceof mongoose.Error) {
-      next(err);
-    } else {
-      next(new mongoose.Error("Unknown error in password hashing"));
-    }
-  }
+  const salt = await bcrypt.genSalt(10);
+  this.password = await bcrypt.hash(this.password, salt);
 });
 
 export default mongoose.models.Candidate ||

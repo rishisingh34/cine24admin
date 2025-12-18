@@ -1,8 +1,6 @@
 import { connectToDB } from "@/lib/db";
 import { NextRequest, NextResponse } from "next/server";
 import Candidate from "@/models/candidate.model";
-import { ICandidate } from "@/types/model.interfaces";
-import { FilterQuery } from "mongoose";
 
 export async function POST(req: NextRequest) {
   await connectToDB();
@@ -10,14 +8,17 @@ export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
     const candidate = await Candidate.create(body);
+
     return NextResponse.json(
       { success: true, data: candidate },
       { status: 201 }
     );
   } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : "An unknown error occurred";
+    const message =
+      error instanceof Error ? error.message : "An unknown error occurred";
+
     return NextResponse.json(
-      { success: false, message: errorMessage },
+      { success: false, message },
       { status: 400 }
     );
   }
@@ -34,14 +35,15 @@ export async function GET(req: NextRequest) {
     const gender = searchParams.get("gender");
     const residence = searchParams.get("residence");
 
-    const page = parseInt(searchParams.get("page") || "1");
-    const limit = parseInt(searchParams.get("limit") || "10");
+    const page = Number(searchParams.get("page") || 1);
+    const limit = Number(searchParams.get("limit") || 10);
     const skip = (page - 1) * limit;
 
-    const query: FilterQuery<ICandidate> = {};
+    // 👇 simple filter object
+    const query: Record<string, any> = {};
 
     if (search) {
-      const regex = { $regex: search, $options: "i" };
+      const regex = new RegExp(search, "i");
       query.$or = [
         { name: regex },
         { email: regex },
@@ -66,10 +68,10 @@ export async function GET(req: NextRequest) {
       totalPages: Math.ceil(total / limit),
       total,
     });
-  } catch (error: unknown) {
+  } catch (error) {
     const message =
       error instanceof Error ? error.message : "Internal server error";
+
     return NextResponse.json({ success: false, message }, { status: 500 });
   }
 }
-
