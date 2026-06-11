@@ -5,7 +5,7 @@ import { Users, ClipboardList, MessageSquareMore } from "lucide-react";
 export default function StatsOverviewCard() {
   return (
     <div className="bg-neutral-900/70 border border-neutral-800 rounded-xl p-4 flex flex-col gap-4">
-      <h2 className="text-lg font-semibold text-white">📊 Overview</h2>
+      <h2 className="text-lg font-semibold text-white">Overview</h2>
       <div className="grid grid-cols-3 gap-4">
         <StatBox title="Candidates" value="452" icon={<Users size={20} />} />
         <StatBox

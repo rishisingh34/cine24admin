@@ -1,13 +1,10 @@
 import { Suspense } from "react";
 import AdminOTPVerifyPage from "@/components/admin/Verify";
-import BackgroundGrid from "@/components/ui/BackgroundGridPattern";
+import LoadingCenter from "@/components/ui/LoadingCenter";
 
 export default function VerifyPage() {
   return (
-    <Suspense
-      fallback={<div className="text-white bg-black h-screen text-center p-8">Loading...</div>}
-    >
-      <BackgroundGrid />
+    <Suspense fallback={<LoadingCenter className="h-screen" />}>
       <AdminOTPVerifyPage />
     </Suspense>
   );

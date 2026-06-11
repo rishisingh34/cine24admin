@@ -1,29 +1,18 @@
 "use client";
 
-import React, { useEffect, useState, useMemo } from "react";
+import React, { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import debounce from "lodash/debounce";
-import throttle from "lodash/throttle";
-
-type Candidate = {
-  _id: string;
-  name: string;
-  studentNumber: string;
-  branch: string;
-  gender: string;
-  email: string;
-  residence: string;
-  phone: string;
-  isVerified: boolean;
-};
+import { useCandidates } from "@/hooks/queries/use-candidates";
+import { useDebouncedValue } from "@/hooks/use-debounced-value";
+import PageHeader from "@/components/ui/PageHeader";
+import Button from "@/components/ui/Button";
+import Input from "@/components/ui/Input";
+import Select from "@/components/ui/Select";
+import LoadingCenter from "@/components/ui/LoadingCenter";
 
 export default function CandidatePage() {
-  const [candidates, setCandidates] = useState<Candidate[]>([]);
   const [page, setPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
-  const [loading, setLoading] = useState(true);
-
   const [search, setSearch] = useState("");
   const [filters, setFilters] = useState({
     gender: "",
@@ -33,226 +22,150 @@ export default function CandidatePage() {
 
   const limit = 10;
   const router = useRouter();
+  const debouncedSearch = useDebouncedValue(search, 300);
+  const debouncedFilters = useDebouncedValue(filters, 300);
 
-  const [debouncedSearch, setDebouncedSearch] = useState(search);
-  const [throttledFilters, setThrottledFilters] = useState(filters);
+  const { data, isLoading, isFetching } = useCandidates({
+    page,
+    limit,
+    search: debouncedSearch || undefined,
+    gender: debouncedFilters.gender || undefined,
+    branch: debouncedFilters.branch || undefined,
+    residence: debouncedFilters.residence || undefined,
+  });
 
-  const debouncedSetSearch = useMemo(
-    () =>
-      debounce((value: string) => {
-        setDebouncedSearch(value);
-      }, 300),
-    []
-  );
-  const throttledSetFilter = useMemo(
-    () =>
-      throttle((value: typeof filters) => {
-        setThrottledFilters(value);
-      }, 1000),
-    []
-  );
-
-  useEffect(() => {
-    debouncedSetSearch(search);
-  }, [search, debouncedSetSearch]);
-
-  useEffect(() => {
-    throttledSetFilter(filters);
-  }, [filters, throttledSetFilter]);
-
-  useEffect(() => {
-    const fetchCandidates = async () => {
-      setLoading(true);
-
-      const query = new URLSearchParams({
-        page: page.toString(),
-        limit: limit.toString(),
-        ...(debouncedSearch && { search: debouncedSearch }),
-        ...(throttledFilters.gender && { gender: throttledFilters.gender }),
-        ...(throttledFilters.branch && { branch: throttledFilters.branch }),
-        ...(throttledFilters.residence && {
-          residence: throttledFilters.residence,
-        }),
-      });
-
-      const res = await fetch(`/api/candidate?${query.toString()}`);
-      const data = await res.json();
-      setCandidates(data.data);
-      setTotalPages(data.totalPages);
-      setLoading(false);
-    };
-
-    fetchCandidates();
-  }, [page, debouncedSearch, throttledFilters]);
+  const candidates = data?.data ?? [];
+  const totalPages = data?.totalPages ?? 1;
+  const loading = isLoading || isFetching;
 
   const handleFilterChange = (field: keyof typeof filters, value: string) => {
-    setFilters((prev) => ({
-      ...prev,
-      [field]: value,
-    }));
+    setFilters((prev) => ({ ...prev, [field]: value }));
+    setPage(1);
   };
 
-  const skeletonRows = Array.from({ length: 1 }).map((_, idx) => (
-    <tr key={idx}>
-      <td colSpan={6} className="p-6 text-center">
-        <div className="flex justify-center items-center h-16">
-          <div className="pulse-loader">
-            <span />
-            <span />
-            <span />
-          </div>
-          <style>
-            {`
-              .pulse-loader {
-                display: flex;
-                gap: 8px;
-              }
-              .pulse-loader span {
-                display: block;
-                width: 12px;
-                height: 12px;
-                border-radius: 50%;
-                background: #6366f1;
-                opacity: 0.7;
-                animation: pulse 1s infinite;
-              }
-              .pulse-loader span:nth-child(2) {
-                animation-delay: 0.2s;
-              }
-              .pulse-loader span:nth-child(3) {
-                animation-delay: 0.4s;
-              }
-              @keyframes pulse {
-                0%, 100% {
-                  transform: scale(1);
-                  opacity: 0.7;
-                }
-                50% {
-                  transform: scale(1.4);
-                  opacity: 1;
-                }
-              }
-            `}
-          </style>
-        </div>
-      </td>
-    </tr>
-  ));
-
   return (
-    <div className="min-h-screen bg-black text-white relative overflow-hidden">
-      <div className="absolute inset-0 opacity-5 bg-[radial-gradient(#ffffff33_1px,transparent_1px)] [background-size:20px_20px] pointer-events-none z-0" />
-
-      <div className="relative z-10 p-6">
-        <div className="flex justify-between items-center mb-6">
-          <h2 className="text-3xl font-bold text-white">Candidates</h2>
-          <Link
-            href="/admin/candidate/add"
-            className="bg-green-600 hover:bg-green-500 text-white px-4 py-2 rounded transition"
-          >
-            + Add Candidate
+    <div className="space-y-6">
+      <PageHeader
+        title="Candidates"
+        action={
+          <Link href="/admin/candidate/add">
+            <Button variant="success">+ Add Candidate</Button>
           </Link>
+        }
+      />
+
+      <div className="flex flex-wrap items-end gap-4">
+        <div className="w-full sm:w-80">
+          <Input
+            label="Search"
+            type="text"
+            placeholder="Name, email, number..."
+            value={search}
+            onChange={(e) => {
+              setSearch(e.target.value);
+              setPage(1);
+            }}
+          />
         </div>
 
-        {/* Search and Filters */}
-        <div className="flex flex-wrap items-center gap-4 mb-6">
-          <input
-            type="text"
-            placeholder="Search by name, email, number..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="px-4 py-2 rounded bg-[#1a1a1a] border border-gray-700 text-white w-40 lg:w-80 md:w-100"
-          />
-
-          <select
+        <div className="w-40">
+          <Select
+            label="Gender"
             value={filters.gender}
             onChange={(e) => handleFilterChange("gender", e.target.value)}
-            className="px-4 py-2 rounded bg-[#1a1a1a] border border-gray-700 text-white"
           >
             <option value="">All Genders</option>
             <option value="Male">Male</option>
             <option value="Female">Female</option>
-          </select>
+          </Select>
+        </div>
 
-          <select
+        <div className="w-40">
+          <Select
+            label="Branch"
             value={filters.branch}
             onChange={(e) => handleFilterChange("branch", e.target.value)}
-            className="px-4 py-2 rounded bg-[#1a1a1a] border border-gray-700 text-white"
           >
             <option value="">All Branches</option>
             <option value="CSE">CSE</option>
             <option value="ECE">ECE</option>
             <option value="ME">ME</option>
-          </select>
+          </Select>
+        </div>
 
-          <select
+        <div className="w-44">
+          <Select
+            label="Residence"
             value={filters.residence}
             onChange={(e) => handleFilterChange("residence", e.target.value)}
-            className="px-4 py-2 rounded bg-[#1a1a1a] border border-gray-700 text-white"
           >
             <option value="">All Residences</option>
             <option value="Hosteller">Hosteller</option>
             <option value="Day Scholar">Day Scholar</option>
             <option value="Outstation">Other</option>
-          </select>
+          </Select>
         </div>
+      </div>
 
-        {/* Table */}
-        <div className="overflow-x-auto">
-          <table className="w-full border border-gray-700 shadow-xl rounded-lg bg-[#0f0f0f]">
-            <thead className="bg-[#1a1a1a] text-gray-300">
+      <div className="overflow-x-auto">
+        <table className="w-full rounded-lg border border-gray-700 bg-[#0f0f0f] shadow-xl">
+          <thead className="bg-[#1a1a1a] text-gray-300">
+            <tr>
+              <th className="p-3.5 text-left font-medium">Name</th>
+              <th className="p-3.5 text-left font-medium">Email</th>
+              <th className="p-3.5 text-left font-medium">Phone</th>
+              <th className="p-3.5 text-left font-medium">Branch</th>
+              <th className="p-3.5 text-left font-medium">Residence</th>
+              <th className="p-3.5 text-left font-medium">Gender</th>
+            </tr>
+          </thead>
+          <tbody>
+            {loading ? (
               <tr>
-                <th className="p-3 text-left">Name</th>
-                <th className="p-3 text-left">Email</th>
-                <th className="p-3 text-left">Phone</th>
-                <th className="p-3 text-left">Branch</th>
-                <th className="p-3 text-left">Residence</th>
-                <th className="p-3 text-left">Gender</th>
+                <td colSpan={6}>
+                  <LoadingCenter className="h-24" />
+                </td>
               </tr>
-            </thead>
-            <tbody>
-              {loading
-                ? skeletonRows
-                : candidates.map((candidate) => (
-                    <tr
-                      key={candidate._id}
-                      onClick={() =>
-                        router.push(`/admin/candidate/${candidate._id}`)
-                      }
-                      className="border-t border-gray-700 hover:bg-[#1c1c1c] cursor-pointer"
-                    >
-                      <td className="p-3">{candidate.name}</td>
-                      <td className="p-3">{candidate.email}</td>
-                      <td className="p-3">{candidate.phone}</td>
-                      <td className="p-3">{candidate.branch}</td>
-                      <td className="p-3">{candidate.residence}</td>
-                      <td className="p-3">{candidate.gender}</td>
-                    </tr>
-                  ))}
-            </tbody>
-          </table>
-        </div>
+            ) : (
+              candidates.map((candidate) => (
+                <tr
+                  key={candidate._id}
+                  onClick={() =>
+                    router.push(`/admin/candidate/${candidate._id}`)
+                  }
+                  className="cursor-pointer border-t border-gray-700 transition duration-200 ease-out hover:bg-[#1c1c1c]/80"
+                >
+                  <td className="p-3.5">{candidate.name}</td>
+                  <td className="p-3.5">{candidate.email}</td>
+                  <td className="p-3.5">{candidate.phone}</td>
+                  <td className="p-3.5">{candidate.branch}</td>
+                  <td className="p-3.5">{candidate.residence}</td>
+                  <td className="p-3.5">{candidate.gender}</td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
 
-        {/* Pagination */}
-        <div className="mt-6 flex justify-center items-center gap-4">
-          <button
-            onClick={() => setPage((p) => Math.max(p - 1, 1))}
-            disabled={page === 1 || loading}
-            className="px-4 py-2 rounded bg-gray-800 text-white hover:bg-gray-700 disabled:opacity-40"
-          >
-            Previous
-          </button>
-          <span className="px-4 py-2 text-gray-300">
-            Page {page} of {totalPages}
-          </span>
-          <button
-            onClick={() => setPage((p) => Math.min(p + 1, totalPages))}
-            disabled={page === totalPages || loading}
-            className="px-4 py-2 rounded bg-gray-800 text-white hover:bg-gray-700 disabled:opacity-40"
-          >
-            Next
-          </button>
-        </div>
+      <div className="flex items-center justify-center gap-4">
+        <Button
+          variant="secondary"
+          onClick={() => setPage((p) => Math.max(p - 1, 1))}
+          disabled={page === 1 || loading}
+        >
+          Previous
+        </Button>
+        <span className="px-4 py-2 text-gray-300">
+          Page {page} of {totalPages}
+        </span>
+        <Button
+          variant="secondary"
+          onClick={() => setPage((p) => Math.min(p + 1, totalPages))}
+          disabled={page === totalPages || loading}
+        >
+          Next
+        </Button>
       </div>
     </div>
   );

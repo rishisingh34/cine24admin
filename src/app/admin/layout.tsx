@@ -5,14 +5,13 @@ import Sidebar from "@/components/admin/Sidebar";
 import BackgroundGridPattern from "@/components/ui/BackgroundGridPattern";
 
 function AdminLayout({ children }: { children: React.ReactNode }) {
-
   return (
-    <div className="min-h-screen bg-neutral-950 flex">
+    <div className="flex min-h-screen bg-neutral-950">
       <BackgroundGridPattern />
       <Sidebar />
-      <div className="flex-1 min-h-screen text-white z-10">
+      <main className="z-10 min-h-screen flex-1 px-6 py-6 text-white">
         {children}
-      </div>
+      </main>
     </div>
   );
 }

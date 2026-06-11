@@ -4,9 +4,10 @@ import Image from "next/image";
 import { useState } from "react";
 import BackgroundGridPattern from "@/components/ui/BackgroundGridPattern";
 import { useRouter } from "next/navigation";
-import { signIn } from "next-auth/react";
-import { EyeIcon, EyeOffIcon, Loader2 } from "lucide-react"; 
-
+import { EyeIcon, EyeOffIcon, LogIn } from "lucide-react";
+import Card from "@/components/ui/Card";
+import Input from "@/components/ui/Input";
+import Button from "@/components/ui/Button";
 
 export default function AdminLoginPage() {
   const [adminEmail, setAdminEmail] = useState("");
@@ -37,125 +38,86 @@ export default function AdminLoginPage() {
       return;
     }
 
-    const result = await signIn("credentials", {
-      email: adminEmail,
-      password: adminPassword,
-      redirect: false,
+    const otpRes = await fetch("/api/auth/send-otp", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        email: adminEmail,
+        password: adminPassword,
+      }),
     });
 
-    if (result?.error === "OTP_SENT") {
-      router.push(`/verify?email=${encodeURIComponent(adminEmail)}`);
-    } else if (result?.error) {
-      setErrors({ general: result.error });
-    } else {
-      // In case someone bypassed OTP (shouldn't happen)
-      router.push("/admin");
+    const otpData = await otpRes.json().catch(() => ({}));
+
+    if (!otpRes.ok) {
+      setErrors({
+        general: otpData.message || "Invalid email or password",
+      });
+      setLoading(false);
+      return;
     }
+
+    router.push(`/verify?email=${encodeURIComponent(adminEmail)}`);
 
     setLoading(false);
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-neutral-950 px-4 py-12">
+    <div className="flex min-h-screen items-center justify-center bg-neutral-950 px-4 py-12">
       <BackgroundGridPattern />
-      <div className="backdrop-blur-lg border border-neutral-800 bg-neutral-900/70 rounded-2xl w-full max-w-md z-10 shadow-lg p-8">
-        <div className="flex flex-col items-center mb-6">
+      <Card className="z-10 w-full max-w-md p-8 shadow-lg">
+        <div className="mb-6 flex flex-col items-center">
           <Image src="/csi-logo.webp" alt="CSI Logo" width={90} height={90} />
-          <h1 className="text-xl font-bold text-white mt-4">Admin Panel</h1>
-          <p className="text-sm text-neutral-400 mt-1">
+          <h1 className="mt-4 text-xl font-semibold text-white">Admin Panel</h1>
+          <p className="mt-1 text-sm text-neutral-400">
             CINE&apos;24 Dashboard Access
           </p>
         </div>
 
         <form onSubmit={handleAdminLogin} className="space-y-5">
-          {/* Email */}
-          <div className="relative">
-            <input
-              type="text"
-              id="adminEmail"
-              value={adminEmail}
-              onChange={(e) => setAdminEmail(e.target.value)}
-              className="peer w-full bg-neutral-800 text-white border border-neutral-700 rounded-md px-4 py-3 placeholder-transparent focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="Email"
-            />
-            <label
-              htmlFor="adminEmail"
-              className={`absolute left-4 text-sm transition-all ${
-                adminEmail
-                  ? "top-[-10px] text-xs text-blue-400"
-                  : "top-3.5 text-sm text-neutral-400 peer-focus:top-[-10px] peer-focus:bg-neutral-800 peer-focus:rounded-full peer-focus:px-2 peer-focus:text-xs peer-focus:text-blue-400"
-              }`}
-            >
-              Email
-            </label>
-            {errors.adminEmail && (
-              <p className="text-red-400 text-xs mt-1">{errors.adminEmail}</p>
-            )}
-          </div>
+          <Input
+            label="Email"
+            type="text"
+            id="adminEmail"
+            value={adminEmail}
+            onChange={(e) => setAdminEmail(e.target.value)}
+            error={errors.adminEmail}
+          />
 
-          {/* Password */}
           <div className="relative">
-            <input
+            <Input
+              label="Password"
               type={showPassword ? "text" : "password"}
               id="adminPassword"
               value={adminPassword}
               onChange={(e) => setAdminPassword(e.target.value)}
-              className="peer w-full bg-neutral-800 text-white border border-neutral-700 rounded-md px-4 py-3 placeholder-transparent focus:outline-none focus:ring-2 focus:ring-blue-500 pr-10"
-              placeholder="Password"
+              error={errors.adminPassword}
+              className="pr-10"
             />
-            <label
-              htmlFor="adminPassword"
-              className={`absolute left-4 text-sm transition-all ${
-                adminPassword
-                  ? "top-[-10px] text-xs text-blue-400"
-                  : "top-3.5 text-sm text-neutral-400 peer-focus:top-[-10px] peer-focus:text-xs peer-focus:bg-neutral-800 peer-focus:rounded-full peer-focus:px-2 peer-focus:text-blue-400"
-              }`}
-            >
-              Password
-            </label>
-
-            {/* 👁️ Toggle button */}
             <button
               type="button"
               onClick={() => setShowPassword((prev) => !prev)}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-white"
+              className="absolute right-3 top-[2.35rem] text-neutral-400 hover:text-white"
               tabIndex={-1}
             >
               {showPassword ? <EyeOffIcon size={18} /> : <EyeIcon size={18} />}
             </button>
-
-            {errors.adminPassword && (
-              <p className="text-red-400 text-xs mt-1">
-                {errors.adminPassword}
-              </p>
-            )}
           </div>
 
           {errors.general && (
-            <p className="text-red-500 text-sm text-center">{errors.general}</p>
+            <p className="text-center text-sm text-red-500">{errors.general}</p>
           )}
 
-          {/* Submit */}
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full flex justify-center items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-md font-semibold transition duration-200 ease-in-out shadow hover:shadow-lg disabled:opacity-60 disabled:cursor-not-allowed"
-          >
-            {loading ? (
-              <>
-                <Loader2 className="animate-spin h-4 w-4" />
-                Verifying...
-              </>
-            ) : (
-              "🔐 Sign In"
-            )}
-          </button>
+          <Button type="submit" loading={loading} className="w-full">
+            <LogIn size={16} />
+            {loading ? "Verifying..." : "Sign In"}
+          </Button>
         </form>
 
         <p className="mt-6 text-center text-sm text-neutral-500">
           © 2024 CSI | CINE&apos;24 Admin Panel
         </p>
-      </div>
+      </Card>
     </div>
   );
 }

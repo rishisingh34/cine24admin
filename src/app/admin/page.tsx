@@ -2,117 +2,99 @@
 
 import React, { useEffect, useState } from "react";
 import { useSocketStore } from "@/stores/socketstore";
-import Loader from "@/components/ui/Loader";
+import LoadingCenter from "@/components/ui/LoadingCenter";
+import PageHeader from "@/components/ui/PageHeader";
+import Button from "@/components/ui/Button";
 
 const PAGE_SIZE = 10;
 
 function AdminDashboard() {
-    const { initSocket, leaderboard } = useSocketStore();
-    const [currentPage, setCurrentPage] = useState(1);
+  const { initSocket, leaderboard } = useSocketStore();
+  const [currentPage, setCurrentPage] = useState(1);
 
-    useEffect(() => {
-        initSocket();
-    }, [initSocket]);
+  useEffect(() => {
+    initSocket();
+  }, [initSocket]);
 
-    const totalPages = Math.ceil(leaderboard.length / PAGE_SIZE);
-    const paginatedLeaderboard = leaderboard.slice(
-        (currentPage - 1) * PAGE_SIZE,
-        currentPage * PAGE_SIZE
-    );
+  const totalPages = Math.ceil(leaderboard.length / PAGE_SIZE);
+  const paginatedLeaderboard = leaderboard.slice(
+    (currentPage - 1) * PAGE_SIZE,
+    currentPage * PAGE_SIZE
+  );
 
-    const goToPreviousPage = () => {
-        setCurrentPage((prev) => Math.max(prev - 1, 1));
-    };
+  return (
+    <div className="space-y-6">
+      <PageHeader title="Leaderboard" />
 
-    const goToNextPage = () => {
-        setCurrentPage((prev) => Math.min(prev + 1, totalPages));
-    };
-
-    return (
-        <div className="space-y-8 p-4">
-            <h1 className="text-3xl font-bold text-white">Leaderboard</h1>
-
-            <div className="bg-neutral-900 border border-neutral-800 rounded-xl p-6 shadow-md">
-                <div className="overflow-x-auto">
-                    <table className="min-w-full text-sm text-left text-white border-separate border-spacing-y-2">
-                        <thead className="bg-neutral-800 rounded">
-                            <tr>
-                                <th className="px-4 py-3">#</th>
-                                <th className="px-4 py-3">Name</th>
-                                <th className="px-4 py-3">Student No</th>
-                                <th className="px-4 py-3">Email</th>
-                                <th className="px-4 py-3">Gender</th>
-                                <th className="px-4 py-3">Score</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {paginatedLeaderboard.length === 0 ? (
-                                <tr>
-                                    <td
-                                        colSpan={6}
-                                        className="px-4 py-6 text-center text-neutral-400"
-                                    >
-                                        <Loader />
-                                    </td>
-                                </tr>
-                            ) : (
-                                paginatedLeaderboard.map((entry, idx) => (
-                                    <tr
-                                        key={entry.email}
-                                        className="bg-neutral-800 hover:bg-neutral-700 transition rounded"
-                                    >
-                                        <td className="px-4 py-3 font-semibold text-white">
-                                            {(currentPage - 1) * PAGE_SIZE +
-                                                idx +
-                                                1}
-                                        </td>
-                                        <td className="px-4 py-3">
-                                            {entry.name}
-                                        </td>
-                                        <td className="px-4 py-3">
-                                            {entry.studentNumber}
-                                        </td>
-                                        <td className="px-4 py-3">
-                                            {entry.email}
-                                        </td>
-                                        <td className="px-4 py-3 capitalize">
-                                            {entry.gender}
-                                        </td>
-                                        <td className="px-4 py-3 font-bold text-green-400">
-                                            {entry.score}
-                                        </td>
-                                    </tr>
-                                ))
-                            )}
-                        </tbody>
-                    </table>
-                </div>
-
-                {/* Pagination Controls */}
-                {totalPages > 1 && (
-                    <div className="flex justify-between items-center mt-6">
-                        <button
-                            onClick={goToPreviousPage}
-                            disabled={currentPage === 1}
-                            className="px-4 py-2 rounded bg-neutral-700 hover:bg-neutral-600 text-white disabled:opacity-40 disabled:cursor-not-allowed"
-                        >
-                            Previous
-                        </button>
-                        <span className="text-sm text-white">
-                            Page {currentPage} of {totalPages}
-                        </span>
-                        <button
-                            onClick={goToNextPage}
-                            disabled={currentPage === totalPages}
-                            className="px-4 py-2 rounded bg-neutral-700 hover:bg-neutral-600 text-white disabled:opacity-40 disabled:cursor-not-allowed"
-                        >
-                            Next
-                        </button>
-                    </div>
-                )}
-            </div>
+      <div className="rounded-xl border border-neutral-800 bg-neutral-900 p-6 shadow-sm">
+        <div className="overflow-x-auto">
+          <table className="min-w-full border-separate border-spacing-y-1 text-left text-sm text-white">
+            <thead className="rounded bg-neutral-800">
+              <tr>
+                <th className="px-4 py-3 font-medium">#</th>
+                <th className="px-4 py-3 font-medium">Name</th>
+                <th className="px-4 py-3 font-medium">Student No</th>
+                <th className="px-4 py-3 font-medium">Email</th>
+                <th className="px-4 py-3 font-medium">Gender</th>
+                <th className="px-4 py-3 font-medium">Score</th>
+              </tr>
+            </thead>
+            <tbody>
+              {paginatedLeaderboard.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="px-4 py-6 text-center">
+                    <LoadingCenter className="h-32" />
+                  </td>
+                </tr>
+              ) : (
+                paginatedLeaderboard.map((entry, idx) => (
+                  <tr
+                    key={entry.email}
+                    className="rounded bg-neutral-800/50 transition duration-200 ease-out hover:bg-neutral-800"
+                  >
+                    <td className="px-4 py-3.5 font-medium text-white">
+                      {(currentPage - 1) * PAGE_SIZE + idx + 1}
+                    </td>
+                    <td className="px-4 py-3.5">{entry.name}</td>
+                    <td className="px-4 py-3.5">{entry.studentNumber}</td>
+                    <td className="px-4 py-3.5">{entry.email}</td>
+                    <td className="px-4 py-3.5 capitalize">{entry.gender}</td>
+                    <td className="px-4 py-3.5 font-semibold text-green-400">
+                      {entry.score}
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
         </div>
-    );
+
+        {totalPages > 1 && (
+          <div className="mt-6 flex items-center justify-between">
+            <Button
+              variant="secondary"
+              onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+              disabled={currentPage === 1}
+            >
+              Previous
+            </Button>
+            <span className="text-sm text-white">
+              Page {currentPage} of {totalPages}
+            </span>
+            <Button
+              variant="secondary"
+              onClick={() =>
+                setCurrentPage((prev) => Math.min(prev + 1, totalPages))
+              }
+              disabled={currentPage === totalPages}
+            >
+              Next
+            </Button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
 }
 
 export default AdminDashboard;

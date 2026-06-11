@@ -5,6 +5,8 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { signIn } from "next-auth/react";
 import { toast } from "sonner";
 import BackgroundGridPattern from "@/components/ui/BackgroundGridPattern";
+import Card from "@/components/ui/Card";
+import Button from "@/components/ui/Button";
 
 export default function AdminOTPVerifyPage() {
   const searchParams = useSearchParams();
@@ -57,7 +59,7 @@ export default function AdminOTPVerifyPage() {
     if (!email || code.length !== 6) return;
 
     setLoading(true);
-    toast.loading("Verifying OTP..."); // ✅ show loading toast
+    toast.loading("Verifying OTP...");
 
     const result = await signIn("credentials", {
       email,
@@ -66,7 +68,7 @@ export default function AdminOTPVerifyPage() {
     });
 
     setLoading(false);
-    toast.dismiss(); // ✅ dismiss loading
+    toast.dismiss();
 
     if (result?.ok && !result.error) {
       toast.success("OTP verified!");
@@ -89,13 +91,13 @@ export default function AdminOTPVerifyPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-neutral-950 px-4 py-12">
+    <div className="flex min-h-screen items-center justify-center bg-neutral-950 px-4 py-12">
       <BackgroundGridPattern />
-      <div className="w-full max-w-md bg-neutral-900/80 border border-neutral-800 backdrop-blur-md p-8 rounded-2xl shadow-lg z-10">
-        <h2 className="text-center text-2xl font-bold text-white mb-2">
+      <Card className="z-10 w-full max-w-md p-8 shadow-lg">
+        <h2 className="mb-2 text-center text-2xl font-semibold text-white">
           Verify OTP
         </h2>
-        <p className="text-sm text-center text-neutral-400 mb-6">
+        <p className="mb-6 text-center text-sm text-neutral-400">
           Enter the 6-digit code sent to{" "}
           <span className="font-medium text-white">{email}</span>
         </p>
@@ -114,53 +116,24 @@ export default function AdminOTPVerifyPage() {
                 onChange={(e) => handleChange(i, e.target.value)}
                 onKeyDown={(e) => handleKeyDown(e, i)}
                 onPaste={handlePaste}
-                className="w-12 h-12 text-center text-lg bg-neutral-800 border border-neutral-700 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="h-12 w-12 rounded-lg border border-neutral-700 bg-neutral-800 text-center text-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             ))}
           </div>
 
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-md font-semibold transition duration-200 ease-in-out shadow hover:shadow-lg"
-          >
-            {loading ? (
-              <span className="flex items-center justify-center gap-2">
-                <svg
-                  className="animate-spin w-5 h-5 text-white"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                >
-                  <circle
-                    className="opacity-25"
-                    cx="12"
-                    cy="12"
-                    r="10"
-                    stroke="currentColor"
-                    strokeWidth="4"
-                  />
-                  <path
-                    className="opacity-75"
-                    fill="currentColor"
-                    d="M4 12a8 8 0 018-8v8H4z"
-                  />
-                </svg>
-                Verifying...
-              </span>
-            ) : (
-              "Verify & Continue"
-            )}
-          </button>
+          <Button type="submit" loading={loading} className="w-full">
+            {loading ? "Verifying..." : "Verify & Continue"}
+          </Button>
 
           <button
             type="button"
             onClick={() => router.back()}
-            className="text-sm text-neutral-400 hover:text-white mt-2 w-full text-center"
+            className="mt-2 w-full text-center text-sm text-neutral-400 hover:text-white"
           >
             ← Back to Login
           </button>
         </form>
-      </div>
+      </Card>
     </div>
   );
 }

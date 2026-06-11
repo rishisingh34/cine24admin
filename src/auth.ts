@@ -1,10 +1,9 @@
-import { DefaultSession, NextAuthOptions } from "next-auth";
-import CredentialsProvider from "next-auth/providers/credentials";
+import NextAuth, { type DefaultSession } from "next-auth";
+import Credentials from "next-auth/providers/credentials";
+import { CredentialsSignin } from "next-auth";
 import { connectToDB } from "@/lib/db";
 import Admin from "@/models/admin.model";
 import Otp from "@/models/otp.model";
-import { sendEmailOtp } from "@/lib/mail";
-import bcrypt from "bcrypt";
 
 declare module "next-auth" {
   interface Session extends DefaultSession {
@@ -22,16 +21,16 @@ declare module "next-auth" {
   }
 }
 
-const authOptions: NextAuthOptions = {
-  secret: process.env.NEXTAUTH_SECRET,
+export const { handlers, auth, signIn, signOut } = NextAuth({
+  secret: process.env.AUTH_SECRET ?? process.env.NEXTAUTH_SECRET,
   pages: {
-    signIn: "/auth/login",
+    signIn: "/",
   },
   session: {
     strategy: "jwt",
   },
   providers: [
-    CredentialsProvider({
+    Credentials({
       name: "Credentials",
       credentials: {
         email: { type: "text" },
@@ -39,41 +38,28 @@ const authOptions: NextAuthOptions = {
         otp: { type: "text" },
       },
       async authorize(credentials) {
-        const { email, password, otp } = credentials || {};
-        if (!email) throw new Error("Email is required");
+        const email = credentials?.email as string | undefined;
+        const password = credentials?.password as string | undefined;
+        const otp = credentials?.otp as string | undefined;
+        if (!email) throw new CredentialsSignin("Email is required");
 
         await connectToDB();
 
         const admin = await Admin.findOne({
           email: email.toLowerCase(),
         }).select("+password");
-        if (!admin || !admin.password) throw new Error("Invalid credentials");
-
-        if (password && !otp) {
-          // const isPasswordValid = admin.password === password.trim();
-          const isPasswordValid = await bcrypt.compare(password.trim(), admin.password); 
-          if (!isPasswordValid) throw new Error("Invalid password");
-
-          const generatedOtp = Math.floor(
-            100000 + Math.random() * 900000
-          ).toString();
-
-          await Otp.findOneAndUpdate(
-            { email: email.toLowerCase() },
-            { email: email.toLowerCase(), otp: generatedOtp },
-            { upsert: true, new: true }
-          );
-
-          await sendEmailOtp(email.toLowerCase(), generatedOtp);
-
-          throw new Error("OTP_SENT");
-        }
+        if (!admin || !admin.password)
+          throw new CredentialsSignin("Invalid credentials");
 
         if (otp && !password) {
           const otpRecord = await Otp.findOne({ email: email.toLowerCase() });
-          const isOtpValid = otpRecord?.otp === otp.trim();
+          const isOtpValid =
+            otpRecord?.otp === otp.trim() &&
+            !!otpRecord?.expiresAt &&
+            otpRecord.expiresAt > new Date();
 
-          if (!isOtpValid) throw new Error("Invalid or expired OTP");
+          if (!isOtpValid)
+            throw new CredentialsSignin("Invalid or expired OTP");
 
           await Otp.deleteOne({ email: email.toLowerCase() });
 
@@ -85,7 +71,7 @@ const authOptions: NextAuthOptions = {
           };
         }
 
-        throw new Error("Invalid login flow");
+        throw new CredentialsSignin("Invalid login flow");
       },
     }),
   ],
@@ -107,6 +93,4 @@ const authOptions: NextAuthOptions = {
       return session;
     },
   },
-};
-
-export default authOptions;
+});

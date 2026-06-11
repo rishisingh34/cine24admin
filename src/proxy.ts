@@ -1,24 +1,20 @@
-import { NextRequest, NextResponse } from "next/server";
-import { getToken } from "next-auth/jwt";
+import { auth } from "@/auth";
+import { NextResponse } from "next/server";
 
-const secret = process.env.NEXTAUTH_SECRET;
-
-export async function proxy(req: NextRequest) {
-  const token = await getToken({ req, secret });
-
-  const isAuth = !!token;
+export const proxy = auth((req) => {
+  const isLoggedIn = !!req.auth;
   const isAuthPage = req.nextUrl.pathname === "/";
 
-  if (isAuth && isAuthPage) {
-    return NextResponse.redirect(new URL("/admin", req.url));
+  if (isLoggedIn && isAuthPage) {
+    return NextResponse.redirect(new URL("/admin", req.nextUrl));
   }
 
-  if (!isAuth && req.nextUrl.pathname.startsWith("/admin")) {
-    return NextResponse.redirect(new URL("/", req.url));
+  if (!isLoggedIn && req.nextUrl.pathname.startsWith("/admin")) {
+    return NextResponse.redirect(new URL("/", req.nextUrl));
   }
 
   return NextResponse.next();
-}
+});
 
 export const config = {
   matcher: ["/", "/admin/:path*"],

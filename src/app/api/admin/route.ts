@@ -1,14 +1,13 @@
 import { connectToDB } from "@/lib/db";
 import { NextRequest, NextResponse } from "next/server";
 import Admin from "@/models/admin.model";
-import { getServerSession } from "next-auth";
-import authOptions from "@/lib/authOptions";
+import { auth } from "@/auth";
 import bcrypt from "bcrypt";
 
 export async function GET(){
     await connectToDB();
     
-    const session = await getServerSession(authOptions);
+    const session = await auth();
     
     if (!session || session.user.role !== "admin") {
         return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
@@ -36,7 +35,7 @@ export async function GET(){
 export async function PUT(req: NextRequest) {
   await connectToDB();
 
-  const session = await getServerSession(authOptions);
+  const session = await auth();
 
   if (!session || session.user.role !== "admin") {
     return NextResponse.json({ message: "Unauthorized" }, { status: 401 });

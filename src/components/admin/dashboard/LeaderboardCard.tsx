@@ -9,7 +9,7 @@ export default function LeaderboardCard() {
 
   return (
     <div className="bg-neutral-900/70 border border-neutral-800 rounded-xl p-4">
-      <h2 className="text-lg font-semibold text-white mb-4">🏆 Leaderboard</h2>
+      <h2 className="text-lg font-semibold text-white mb-4">Leaderboard</h2>
       <div className="overflow-x-auto">
         <table className="min-w-full text-sm text-neutral-300">
           <thead>

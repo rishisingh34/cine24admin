@@ -4,7 +4,8 @@ import { useState, useEffect } from "react";
 import { Plus, Save, ChevronLeft, ChevronRight } from "lucide-react";
 import Editor from "@monaco-editor/react";
 import { toast } from "sonner";
-import Loader from "@/components/ui/Loader";
+import { useQuestions, useSaveQuestion } from "@/hooks/queries/use-questions";
+import LoadingCenter from "@/components/ui/LoadingCenter";
 
 const SUBJECTS = [
   "HTML",
@@ -60,12 +61,13 @@ export default function QuestionManager() {
     Java: [],
     Python: [],
     C: [],
-    Cpp: [],
+    "C++": [],
   });
 
   const [currentIndex, setCurrentIndex] = useState(0);
   const [showSubjects, setShowSubjects] = useState(true);
-  const [loading, setLoading] = useState(true); 
+  const { data: questionsData, isLoading } = useQuestions();
+  const saveMutation = useSaveQuestion();
 
   const currentQuestions = questions[selectedSubject];
   const current = currentQuestions[currentIndex] || {
@@ -81,66 +83,40 @@ export default function QuestionManager() {
   };
 
   useEffect(() => {
-    const fetchQuestions = async () => {
-      setLoading(true);
-      try {
-        const res = await fetch("/api/question");
-        const data = await res.json();
+    if (!questionsData?.data) return;
 
-        if (!res.ok) throw new Error(data.message);
-
-        const grouped: Record<string, Question[]> = {
-          HTML: [],
-          CSS: [],
-          SQL: [],
-          Aptitude: [],
-          Java: [],
-          Python: [],
-          C: [],
-          "C++": [],
-        };
-
-        type ApiOption = { id?: number; desc?: string };
-        type ApiQuestion = {
-          _id: string;
-          question: string;
-          options: ApiOption[];
-          answer: number;
-          code?: string;
-          codeLang?: string;
-          subject: string;
-        };
-
-        (data.data as ApiQuestion[]).forEach((q) => {
-          const formatted: Question = {
-            _id: q._id,
-            question: q.question,
-            options: q.options.map((opt, idx) => ({
-              id: opt.id ?? idx,
-              desc: opt.desc ?? "",
-            })),
-            answer: q.answer,
-            code: q.code,
-            codeLang: q.codeLang,
-            markdown: !!q.code,
-          };
-
-          if (grouped[q.subject]) {
-            grouped[q.subject].push(formatted);
-          }
-        });
-        console.log("Fetched questions:", grouped);
-
-        setQuestions(grouped);
-      } catch (err) {
-        console.error("Failed to fetch questions:", err);
-      } finally {
-        setLoading(false);
-      }
+    const grouped: Record<string, Question[]> = {
+      HTML: [],
+      CSS: [],
+      SQL: [],
+      Aptitude: [],
+      Java: [],
+      Python: [],
+      C: [],
+      "C++": [],
     };
 
-    fetchQuestions();
-  }, []);
+    questionsData.data.forEach((q) => {
+      const formatted: Question = {
+        _id: q._id,
+        question: q.question,
+        options: q.options.map((opt, idx) => ({
+          id: opt.id ?? idx,
+          desc: opt.desc ?? "",
+        })),
+        answer: q.answer,
+        code: q.code,
+        codeLang: q.codeLang,
+        markdown: !!q.code,
+      };
+
+      if (grouped[q.subject]) {
+        grouped[q.subject].push(formatted);
+      }
+    });
+
+    setQuestions(grouped);
+  }, [questionsData]);
 
   const updateCurrent = (updated: Question) => {
     const updatedList = [...currentQuestions];
@@ -193,21 +169,10 @@ export default function QuestionManager() {
         codeLang: current.codeLang || "",
       };
 
-      const isUpdate = !!current._id;
-
-      const res = await fetch(
-        isUpdate ? `/api/question/${current._id}` : "/api/question",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(payload),
-        }
-      );
-
-      const result = await res.json();
-      if (!res.ok) throw new Error(result.message);
+      const result = await saveMutation.mutateAsync({
+        id: current._id,
+        payload,
+      });
 
       const updated = { ...current, _id: result.data._id };
       updateCurrent(updated);
@@ -272,9 +237,9 @@ export default function QuestionManager() {
       </div>
 
       {/* Main Area */}
-      {loading ? (
-          <div className="flex items-center justify-center w-full h-full">
-            <Loader />
+      {isLoading ? (
+          <div className="flex h-full w-full items-center justify-center text-[#f7903d]">
+            <LoadingCenter className="h-full" size="lg" />
           </div>
         ):( 
       <div className="flex-1 flex flex-col bg-[#1E1E1E]">
