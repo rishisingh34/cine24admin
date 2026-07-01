@@ -67,6 +67,9 @@ export default function Sidebar() {
                 alt="CSI Logo"
                 width={90}
                 height={90}
+                loading="eager"
+                priority
+                style={{ width: 90, height: "auto" }}
               />
               <h1 className="mt-4 text-xl font-semibold text-white">
                 Admin Panel

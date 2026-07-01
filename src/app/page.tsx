@@ -67,7 +67,15 @@ export default function AdminLoginPage() {
       <BackgroundGridPattern />
       <Card className="z-10 w-full max-w-md p-8 shadow-lg">
         <div className="mb-6 flex flex-col items-center">
-          <Image src="/csi-logo.webp" alt="CSI Logo" width={90} height={90} />
+          <Image
+            src="/csi-logo.webp"
+            alt="CSI Logo"
+            width={90}
+            height={90}
+            loading="eager"
+            priority
+            style={{ width: 90, height: "auto" }}
+          />
           <h1 className="mt-4 text-xl font-semibold text-white">Admin Panel</h1>
           <p className="mt-1 text-sm text-neutral-400">
             CINE&apos;24 Dashboard Access

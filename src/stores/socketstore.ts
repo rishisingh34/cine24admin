@@ -48,19 +48,18 @@ export const useSocketStore = create<SocketState>((set, get) => ({
             };
 
             ws.onmessage = (event) => {
-                try {
-                    const data = JSON.parse(event.data);
-                    console.log("📨 Message from server:", data);
+                const raw = event.data;
+                if (typeof raw !== "string" || !raw.trim().startsWith("{")) {
+                    return;
+                }
 
+                try {
+                    const data = JSON.parse(raw);
                     if (data.event === "leaderboard") {
                         set({ leaderboard: data.results });
                     }
                 } catch (err) {
-                    console.log(err); 
-                    console.warn(
-                        "📭 Non-JSON message from server:",
-                        event.data
-                    );
+                    console.warn("Failed to parse WebSocket message:", raw, err);
                 }
             };
 
