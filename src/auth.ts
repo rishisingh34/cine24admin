@@ -4,6 +4,7 @@ import { CredentialsSignin } from "next-auth";
 import { connectToDB } from "@/lib/db";
 import Admin from "@/models/admin.model";
 import Otp from "@/models/otp.model";
+import { authConfig } from "@/auth.config";
 
 declare module "next-auth" {
   interface Session extends DefaultSession {
@@ -22,13 +23,7 @@ declare module "next-auth" {
 }
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
-  secret: process.env.AUTH_SECRET ?? process.env.NEXTAUTH_SECRET,
-  pages: {
-    signIn: "/",
-  },
-  session: {
-    strategy: "jwt",
-  },
+  ...authConfig,
   providers: [
     Credentials({
       name: "Credentials",
@@ -75,22 +70,4 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       },
     }),
   ],
-  callbacks: {
-    async jwt({ token, user }) {
-      if (user) {
-        token.id = user.id;
-        token.role = user.role;
-        token.email = user.email;
-      }
-      return token;
-    },
-    async session({ session, token }) {
-      if (session.user) {
-        session.user.id = token.id as string;
-        session.user.role = token.role as string;
-        session.user.email = token.email as string;
-      }
-      return session;
-    },
-  },
 });
